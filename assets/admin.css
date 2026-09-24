@@ -1,0 +1,235 @@
+/**
+ * SEO 自动标签 · 设置页样式
+ */
+
+.seo-auto-tags-wrap h1 {
+	margin-bottom: 6px;
+}
+
+.seo-auto-tags-lead {
+	max-width: 760px;
+	margin: 0 0 18px;
+	padding: 12px 16px;
+	background: #f0f6fc;
+	border-left: 4px solid #2271b1;
+	border-radius: 0 4px 4px 0;
+	font-size: 13.5px;
+	line-height: 1.7;
+	color: #1d2327;
+}
+
+.seo-auto-tags-wrap h2.title {
+	padding-top: 8px;
+}
+
+.seo-auto-tags-radio {
+	display: block;
+	margin-bottom: 4px;
+}
+
+.seo-auto-tags-ok {
+	color: #00a32a;
+	font-weight: 600;
+}
+
+.seo-auto-tags-test-result {
+	display: inline-block;
+	margin-left: 8px;
+	font-size: 13px;
+	line-height: 1.6;
+	vertical-align: middle;
+	word-break: break-all;
+}
+
+.seo-auto-tags-test-result.is-ok {
+	color: #00a32a;
+}
+
+.seo-auto-tags-test-result.is-error {
+	color: #d63638;
+}
+
+.seo-auto-tags-footer {
+	max-width: 760px;
+	margin-top: 26px;
+	padding: 16px 20px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid #00a32a;
+	border-radius: 4px;
+}
+
+.seo-auto-tags-footer p {
+	margin: 0 0 8px;
+	font-size: 13.5px;
+	line-height: 1.7;
+}
+
+.seo-auto-tags-footer p:last-child {
+	margin-bottom: 0;
+}
+
+.seo-auto-tags-credit {
+	padding-top: 10px;
+	margin-top: 10px;
+	border-top: 1px dashed #e4e7ec;
+	color: #5b6472;
+	font-size: 12.5px;
+}
+
+.seo-auto-tags-credit a {
+	color: #2271b1;
+}
+
+/* ---------- AI 消耗清单 ---------- */
+
+.seo-auto-tags-consume {
+	max-width: 760px;
+	margin: 4px 0 0;
+	padding: 14px 18px;
+	background: #fdf7ec;
+	border-left: 3px solid #dba617;
+	border-radius: 0 6px 6px 0;
+	font-size: 13.5px;
+	line-height: 1.75;
+}
+
+.seo-auto-tags-consume p {
+	margin: 0 0 8px;
+}
+
+.seo-auto-tags-consume p:last-child {
+	margin-bottom: 0;
+}
+
+.seo-auto-tags-consume ul {
+	margin: 0 0 10px;
+	padding-left: 20px;
+}
+
+.seo-auto-tags-consume li {
+	margin-bottom: 5px;
+}
+
+.seo-auto-tags-usage {
+	padding-bottom: 10px;
+	margin-bottom: 12px !important;
+	border-bottom: 1px dashed #e0d3b8;
+}
+
+.seo-auto-tags-usage strong {
+	font-size: 15px;
+	color: #7a4a00;
+}
+
+.seo-auto-tags-usage .description {
+	display: block;
+	margin-top: 2px;
+	font-size: 12.5px;
+}
+
+.seo-auto-tags-ai-block {
+	margin-top: 4px;
+}
+
+/* ---------- 标签健康度 ---------- */
+
+.seo-auto-tags-health {
+	max-width: 900px;
+	margin-top: 26px;
+	padding: 20px 24px 24px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+.seo-auto-tags-health h2.title {
+	margin-top: 0;
+	padding-top: 0;
+}
+
+.seo-auto-tags-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 16px 0 14px;
+}
+
+.seo-auto-tags-stat {
+	flex: 1 1 150px;
+	min-width: 130px;
+	padding: 12px 14px;
+	background: #fafbfc;
+	border: 1px solid #e4e7ec;
+	border-radius: 8px;
+}
+
+.seo-auto-tags-stat .k {
+	display: block;
+	margin-bottom: 6px;
+	color: #5b6472;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+.seo-auto-tags-stat .v {
+	display: block;
+	color: #1d2327;
+	font-size: 22px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.seo-auto-tags-stat .v.is-warn {
+	color: #b26200;
+}
+
+.seo-auto-tags-tip {
+	margin: 8px 0 0;
+	padding: 10px 14px;
+	border-radius: 4px;
+	font-size: 13.5px;
+	line-height: 1.7;
+}
+
+.seo-auto-tags-tip.is-ok {
+	background: #edfaef;
+	border-left: 3px solid #00a32a;
+}
+
+.seo-auto-tags-tip.is-warn {
+	background: #fef8ee;
+	border-left: 3px solid #dba617;
+}
+
+/* ---------- 文章列表的标签列 ---------- */
+
+.column-seo_auto_tags_tags {
+	width: 120px;
+}
+
+.seo-auto-tags-col-empty {
+	color: #b26200;
+}
+
+.seo-auto-tags-col-count {
+	color: #1d2327;
+}
+
+.seo-auto-tags-col-btn {
+	margin-top: 4px;
+	display: inline-block;
+	font-size: 12px;
+	color: #2271b1;
+	text-decoration: underline;
+	cursor: pointer;
+	background: none;
+	border: 0;
+	padding: 0;
+}
+
+.seo-auto-tags-col-btn[disabled] {
+	color: #8c8f94;
+	text-decoration: none;
+	cursor: default;
+}
