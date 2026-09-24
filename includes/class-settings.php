@@ -190,7 +190,6 @@ class SEO_Auto_Tags_Settings {
 			return '';
 		}
 
-		// 没有加密前缀，按旧版本的明文处理。
 		$prefix = substr( $stored, 0, 2 );
 
 		if ( 's:' !== $prefix && 'o:' !== $prefix ) {
@@ -239,7 +238,6 @@ class SEO_Auto_Tags_Settings {
 					return '';
 				}
 			} else {
-				// 兼容早期 OpenSSL 密文格式。
 				$iv     = substr( $data, 0, 16 );
 				$cipher = substr( $data, 16 );
 			}
@@ -265,13 +263,11 @@ class SEO_Auto_Tags_Settings {
 		$issues = array();
 		$level  = 'ok';
 
-		// PHP 版本。
 		if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
 			$issues[] = 'PHP 版本过低（' . PHP_VERSION . '），需要 7.4 或更高。';
 			$level    = 'error';
 		}
 
-		// 核心扩展。
 		if ( ! function_exists( 'json_decode' ) ) {
 			$issues[] = 'PHP 未启用 json 扩展，插件无法正常工作。';
 			$level    = 'error';
@@ -282,7 +278,6 @@ class SEO_Auto_Tags_Settings {
 			$level    = 'warn';
 		}
 
-		// 加密扩展（影响 API Key 存储安全）。
 		$has_sodium = function_exists( 'sodium_crypto_secretbox' ) && function_exists( 'sodium_crypto_secretbox_open' ) && function_exists( 'random_bytes' );
 		$has_openssl = function_exists( 'openssl_encrypt' ) && function_exists( 'openssl_decrypt' ) && function_exists( 'hash_hmac' ) && function_exists( 'random_bytes' );
 
@@ -291,14 +286,12 @@ class SEO_Auto_Tags_Settings {
 			$level    = 'warn';
 		}
 
-		// 外网连通性（AI 模式需要）。
 		$can_http = function_exists( 'curl_init' ) || ini_get( 'allow_url_fopen' );
 		if ( ! $can_http ) {
 			$issues[] = 'PHP 既没启用 cURL，allow_url_fopen 也为 Off，AI 模式将无法调用外部接口。';
 			$level    = 'warn';
 		}
 
-		// WordPress 版本。
 		global $wp_version;
 		$wp_ver = isset( $wp_version ) ? (string) $wp_version : '0.0';
 		if ( version_compare( $wp_ver, '5.8', '<' ) ) {
@@ -306,7 +299,6 @@ class SEO_Auto_Tags_Settings {
 			$level    = 'warn';
 		}
 
-		// 内存限制。
 		$mem       = (string) ini_get( 'memory_limit' );
 		$mem_bytes = function_exists( 'wp_convert_hr_to_bytes' ) ? wp_convert_hr_to_bytes( $mem ) : 0;
 		if ( $mem_bytes > 0 && $mem_bytes < 64 * 1024 * 1024 ) {
@@ -314,14 +306,12 @@ class SEO_Auto_Tags_Settings {
 			$level    = 'warn';
 		}
 
-		// 执行时间。
 		$max_time = (int) ini_get( 'max_execution_time' );
 		if ( $max_time > 0 && $max_time < 30 ) {
 			$issues[] = 'PHP 最大执行时间（' . $max_time . ' 秒）偏短，AI 接口响应慢时可能超时。建议设为 30 秒或更高。';
 			$level    = 'warn';
 		}
 
-		// wp-config 常量缺失（影响加密）。
 		if ( ! defined( 'AUTH_KEY' ) || ! defined( 'SECURE_AUTH_SALT' ) ) {
 			$issues[] = 'wp-config.php 里缺少 AUTH_KEY 或 SECURE_AUTH_SALT，API Key 无法加密存储。建议用 WordPress 官方密钥生成服务补全。';
 			$level    = 'warn';
@@ -435,7 +425,6 @@ class SEO_Auto_Tags_Settings {
 		$out['api_base'] = isset( $in['api_base'] ) ? esc_url_raw( trim( (string) $in['api_base'] ) ) : '';
 		$out['model']    = isset( $in['model'] ) ? sanitize_text_field( trim( (string) $in['model'] ) ) : '';
 
-		// 屏蔽词按行清洗。
 		$raw_block = isset( $in['blocklist'] ) ? (string) $in['blocklist'] : '';
 		$raw_block = wp_strip_all_tags( $raw_block );
 		$lines     = array();
@@ -449,7 +438,6 @@ class SEO_Auto_Tags_Settings {
 
 		$out['blocklist'] = implode( "\n", array_slice( array_unique( $lines ), 0, 200 ) );
 
-		// 保存时一并校验接口地址格式。
 		if ( 'ai' === $out['mode'] && '' !== $out['api_base'] ) {
 			$chk = SEO_Auto_Tags_Generator::validate_api_base( $out['api_base'] );
 
@@ -463,7 +451,6 @@ class SEO_Auto_Tags_Settings {
 			}
 		}
 
-		// API Key：留空保留原值；勾选「清除」则置空。
 		$key   = isset( $in['api_key'] ) ? trim( (string) $in['api_key'] ) : '';
 		$clear = ! empty( $in['clear_key'] );
 

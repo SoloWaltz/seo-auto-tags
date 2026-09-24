@@ -157,7 +157,6 @@ class SEO_Auto_Tags_Ajax {
 		$title   = isset( $_POST['title'] ) ? wp_unslash( (string) $_POST['title'] ) : '';
 		$content = isset( $_POST['content'] ) ? wp_unslash( (string) $_POST['content'] ) : '';
 
-		// 限制请求体，避免异常输入占用过多内存。按字符（而非字节）截断，避免切到多字节字符中间产生乱码。
 		$title   = self::clip( $title, 5000 );
 		$content = self::clip( $content, 500000 );
 
@@ -223,7 +222,6 @@ class SEO_Auto_Tags_Ajax {
 				$new = wp_insert_term( $name, 'post_tag' );
 
 				if ( is_wp_error( $new ) ) {
-					// 并发下可能刚好被别人建了，再查一次。
 					$again = term_exists( $name, 'post_tag' );
 
 					if ( ! $again ) {
@@ -326,7 +324,6 @@ class SEO_Auto_Tags_Ajax {
 	public static function test() {
 		self::guard( 'manage_options' );
 
-		// 测试会消耗少量 token，限制连点。
 		$throttle = SEO_Auto_Tags_Generator::check_test_throttle();
 
 		if ( is_wp_error( $throttle ) ) {

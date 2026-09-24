@@ -1,6 +1,3 @@
-/**
- * SEO 自动标签 · 文章列表页「一键生成」
- */
 ( function () {
 	'use strict';
 

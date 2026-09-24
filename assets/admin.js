@@ -1,6 +1,3 @@
-/**
- * SEO 自动标签 · 设置页交互
- */
 ( function () {
 	'use strict';
 
@@ -14,7 +11,6 @@
 		return Array.prototype.slice.call( document.querySelectorAll( sel ) );
 	}
 
-	/* 服务商联动：自动填接口地址与模型名 */
 	function bindProvider() {
 		var sel = q( '[data-seo-auto-tags-provider]' );
 		var base = q( '[data-seo-auto-tags-base]' );
@@ -39,7 +35,6 @@
 		} );
 	}
 
-	/* 显示 / 隐藏 API Key */
 	function bindKeyToggle() {
 		var btn = q( '[data-seo-auto-tags-toggle-key]' );
 		var input = q( '#seo-auto-tags-key' );
@@ -59,7 +54,6 @@
 		} );
 	}
 
-	/* 模式切换：只在 AI 模式下显示接口配置。 */
 	function bindMode() {
 		var radios = qa( '[data-seo-auto-tags-mode]' );
 		var block = q( '[data-seo-auto-tags-ai-block]' );
@@ -104,7 +98,6 @@
 		sync();
 	}
 
-	/* 测试连通性 */
 	function bindTest() {
 		var btn = q( '[data-seo-auto-tags-test]' );
 		var out = q( '[data-seo-auto-tags-test-result]' );
@@ -150,7 +143,6 @@
 		} );
 	}
 
-	/* 清除 AI 结果缓存 */
 	function bindClearCache() {
 		var btn = q( '[data-seo-auto-tags-clear-cache]' );
 		var out = q( '[data-seo-auto-tags-test-result]' );
@@ -191,7 +183,6 @@
 		} );
 	}
 
-	/* 保存成功提示 */
 	function bindSaveToast() {
 		var form = q( '[data-seo-auto-tags-form]' );
 
@@ -208,7 +199,6 @@
 			form.dataset.submitting = '1';
 		} );
 
-		// WordPress 保存后会重新加载页面，通过 URL 参数判断。
 		if ( location.search.indexOf( 'settings-updated=true' ) !== -1 ) {
 			window.setTimeout( function () {
 				toast.classList.add( 'is-show' );

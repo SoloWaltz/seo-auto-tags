@@ -1,8 +1,3 @@
-/**
- * SEO 自动标签 · 设置页与文章列表样式
- * 视觉方向：编辑工作台 / editorial workspace
- */
-
 :root {
 	--sat-ink: #17252b;
 	--sat-ink-soft: #2e444c;
@@ -24,7 +19,6 @@
 	--sat-red-soft: #fff0f0;
 }
 
-/* ---------- 外框：像一个小型编辑工作台 ---------- */
 
 .seo-auto-tags-wrap {
 	max-width: 1180px;
@@ -96,7 +90,6 @@
 	box-shadow: 0 0 0 3px rgba(127, 209, 154, 0.15);
 }
 
-/* ---------- 顶部概览：不是三张普通卡片，而是一条状态带 ---------- */
 
 .seo-auto-tags-overview {
 	display: grid;
@@ -166,7 +159,6 @@
 	font-size: 11px;
 }
 
-/* ---------- 提示条：同一条基线、不同语义色 ---------- */
 
 .seo-auto-tags-env {
 	width: 100%;
@@ -276,7 +268,6 @@
 	margin-bottom: 3px;
 }
 
-/* ---------- 主布局 ---------- */
 
 .seo-auto-tags-wrap form[data-seo-auto-tags-form] {
 	max-width: none;
@@ -304,7 +295,6 @@
 	margin: 0 0 14px;
 }
 
-/* ---------- 内容区：扁平纸张，不再堆满圆角卡片 ---------- */
 
 .seo-auto-tags-section {
 	position: relative;
@@ -399,7 +389,6 @@
 	padding-top: 4px;
 }
 
-/* ---------- 选项：用状态块代替大面积灰卡片 ---------- */
 
 .seo-auto-tags-radio {
 	display: flex;
@@ -435,7 +424,6 @@
 	margin: -1px 0 10px 30px;
 }
 
-/* ---------- 控件 ---------- */
 
 .seo-auto-tags-section input[type="text"],
 .seo-auto-tags-section input[type="password"],
@@ -488,7 +476,6 @@
 	color: var(--sat-ink-soft);
 }
 
-/* ---------- 状态提示 ---------- */
 
 .seo-auto-tags-ok {
 	color: var(--sat-green);
@@ -524,7 +511,6 @@
 	color: var(--sat-red);
 }
 
-/* ---------- 侧栏 ---------- */
 
 .seo-auto-tags-side-card {
 	position: relative;
@@ -593,7 +579,6 @@
 	font-size: 10px;
 }
 
-/* ---------- 折叠区：线框式，不再像套娃卡片 ---------- */
 
 .seo-auto-tags-advanced,
 .seo-auto-tags-consume-details,
@@ -697,7 +682,6 @@
 	overflow: visible;
 }
 
-/* ---------- 标签健康度 ---------- */
 
 .seo-auto-tags-health-toggle {
 	max-width: none;
@@ -783,7 +767,6 @@
 	background: var(--sat-gold-soft);
 }
 
-/* ---------- 保存栏：稳定、全宽的行动条，不悬浮 ---------- */
 
 .seo-auto-tags-wrap form[data-seo-auto-tags-form] > p.submit {
 	width: 100%;
@@ -814,7 +797,6 @@
 	transform: translateY(-1px);
 }
 
-/* ---------- 使用说明与署名：底部三栏统一卡片、全宽对齐 ---------- */
 
 .seo-auto-tags-footer {
 	width: 100%;
@@ -924,7 +906,6 @@
 	font-size: 10px;
 }
 
-/* ---------- 保存提示 ---------- */
 
 .seo-auto-tags-toast {
 	position: fixed;
@@ -954,7 +935,6 @@
 	transform: translateX(120%);
 }
 
-/* ---------- 文章列表标签列 ---------- */
 
 .column-seo_auto_tags_tags {
 	width: 120px;
@@ -986,7 +966,6 @@
 	cursor: default;
 }
 
-/* ---------- 响应式 ---------- */
 
 @media screen and (max-width: 960px) {
 	.seo-auto-tags-wrap {
