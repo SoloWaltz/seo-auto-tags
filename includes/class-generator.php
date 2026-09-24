@@ -429,6 +429,24 @@ class SEO_Auto_Tags_Generator {
 		delete_transient( 'seo_auto_tags_stats' );
 	}
 
+	/**
+	 * 清理所有 AI 结果缓存。
+	 */
+	public static function flush_ai_cache() {
+		global $wpdb;
+
+		$like = $wpdb->esc_like( '_transient_seo_auto_tags_ai_' ) . '%';
+		$timeout_like = $wpdb->esc_like( '_transient_timeout_seo_auto_tags_ai_' ) . '%';
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+				$like,
+				$timeout_like
+			)
+		);
+	}
+
 	/* ---------------------------------------------------------------------
 	 * 本地算法
 	 * ------------------------------------------------------------------ */
@@ -1226,6 +1244,19 @@ class SEO_Auto_Tags_Generator {
 			if ( isset( $seen[ $key ] ) ) {
 				continue;
 			}
+
+			$similar = false;
+			foreach ( $out as $existing ) {
+				if ( self::similar_tag( $t, $existing ) ) {
+					$similar = true;
+					break;
+				}
+			}
+
+			if ( $similar ) {
+				continue;
+			}
+
 			$seen[ $key ] = 1;
 			$out[]        = $t;
 
@@ -1235,6 +1266,29 @@ class SEO_Auto_Tags_Generator {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * 保守判断两个标签是否过于相似，仅处理明显的包含关系。
+	 *
+	 * @param string $left  标签一。
+	 * @param string $right 标签二。
+	 * @return bool
+	 */
+	private static function similar_tag( $left, $right ) {
+		$left  = self::lower( preg_replace( '/[\s\p{P}\p{S}]+/u', '', (string) $left ) );
+		$right = self::lower( preg_replace( '/[\s\p{P}\p{S}]+/u', '', (string) $right ) );
+
+		if ( '' === $left || '' === $right || $left === $right ) {
+			return true === ( $left === $right );
+		}
+
+		$shorter = self::len( $left ) <= self::len( $right ) ? $left : $right;
+		$longer  = self::len( $left ) > self::len( $right ) ? $left : $right;
+		$short_len = self::len( $shorter );
+		$long_len  = self::len( $longer );
+
+		return $short_len >= 3 && $short_len / max( 1, $long_len ) >= 0.6 && false !== strpos( $longer, $shorter );
 	}
 
 	/**

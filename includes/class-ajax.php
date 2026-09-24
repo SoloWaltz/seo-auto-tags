@@ -28,6 +28,7 @@ class SEO_Auto_Tags_Ajax {
 		add_action( 'wp_ajax_seo_auto_tags_list_generate', array( __CLASS__, 'list_generate' ) );
 		add_action( 'wp_ajax_seo_auto_tags_list_apply', array( __CLASS__, 'list_apply' ) );
 		add_action( 'wp_ajax_seo_auto_tags_test', array( __CLASS__, 'test' ) );
+		add_action( 'wp_ajax_seo_auto_tags_clear_cache', array( __CLASS__, 'clear_cache' ) );
 	}
 
 	/**
@@ -147,6 +148,12 @@ class SEO_Auto_Tags_Ajax {
 	public static function generate() {
 		self::guard( 'edit_posts' );
 
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+
+		if ( $post_id && ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( array( 'message' => '你没有编辑这篇文章的权限。' ), 403 );
+		}
+
 		$title   = isset( $_POST['title'] ) ? wp_unslash( (string) $_POST['title'] ) : '';
 		$content = isset( $_POST['content'] ) ? wp_unslash( (string) $_POST['content'] ) : '';
 
@@ -170,6 +177,16 @@ class SEO_Auto_Tags_Ajax {
 				'existing'   => self::mark_existing( $res['tags'] ),
 			)
 		);
+	}
+
+	/**
+	 * 清理 AI 结果缓存，不影响文章标签和限速计数。
+	 */
+	public static function clear_cache() {
+		self::guard( 'manage_options' );
+
+		SEO_Auto_Tags_Generator::flush_ai_cache();
+		wp_send_json_success( array( 'message' => 'AI 结果缓存已清除。' ) );
 	}
 
 	/**

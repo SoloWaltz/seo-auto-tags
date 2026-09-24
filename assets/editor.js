@@ -133,6 +133,7 @@
 		( tags || [] ).forEach( function ( name, i ) {
 			var wrap = document.createElement( 'label' );
 			wrap.className = 'seo-auto-tags-item';
+			wrap.setAttribute( 'data-seo-auto-tags-item', '' );
 			wrap.setAttribute( 'for', 'seo-auto-tags-tag-' + i );
 
 			var cb = document.createElement( 'input' );
@@ -142,12 +143,15 @@
 			cb.value = name;
 			cb.setAttribute( 'data-seo-auto-tags-check', '' );
 
-			var span = document.createElement( 'span' );
-			span.className = 'seo-auto-tags-name';
-			span.textContent = name;
+			var input = document.createElement( 'input' );
+			input.type = 'text';
+			input.className = 'seo-auto-tags-name';
+			input.value = name;
+			input.maxLength = 40;
+			input.setAttribute( 'data-seo-auto-tags-name', '' );
 
 			wrap.appendChild( cb );
-			wrap.appendChild( span );
+			wrap.appendChild( input );
 
 			if ( existing && existing[ name ] ) {
 				var badge = document.createElement( 'span' );
@@ -163,6 +167,11 @@
 		if ( box ) {
 			box.hidden = false;
 		}
+
+		var copy = q( '[data-seo-auto-tags-copy]' );
+		if ( copy ) {
+			copy.hidden = false;
+		}
 	}
 
 	function setAll( checked ) {
@@ -177,10 +186,35 @@
 		var items = document.querySelectorAll( '[data-seo-auto-tags-check]' );
 		Array.prototype.forEach.call( items, function ( c ) {
 			if ( c.checked ) {
-				out.push( c.value );
+				var item = c.closest( '[data-seo-auto-tags-item]' );
+				var input = item ? item.querySelector( '[data-seo-auto-tags-name]' ) : null;
+				var value = input ? input.value.trim() : c.value;
+				if ( value ) {
+					out.push( value );
+				}
 			}
 		} );
 		return out;
+	}
+
+	function copyTags() {
+		var tags = pickedTags();
+		if ( ! tags.length ) {
+			status( '没有可复制的标签。', 'error' );
+			return;
+		}
+
+		var text = tags.join( '、' );
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			navigator.clipboard.writeText( text ).then( function () {
+				status( '标签已复制。', 'ok' );
+			} ).catch( function () {
+				status( '复制失败，请手动选择标签。', 'warn' );
+			} );
+			return;
+		}
+
+		status( '当前浏览器不支持自动复制：' + text, 'warn' );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -382,6 +416,11 @@
 		if ( t.closest( '[data-seo-auto-tags-generate]' ) ) {
 			e.preventDefault();
 			doGenerate();
+			return;
+		}
+		if ( t.closest( '[data-seo-auto-tags-copy]' ) ) {
+			e.preventDefault();
+			copyTags();
 			return;
 		}
 		if ( t.closest( '[data-seo-auto-tags-apply-btn]' ) ) {

@@ -805,8 +805,9 @@ class SEO_Auto_Tags_Settings {
 								<th scope="row">连通性测试</th>
 								<td>
 									<button type="button" class="button" data-seo-auto-tags-test>测试连接</button>
+										<button type="button" class="button" data-seo-auto-tags-clear-cache>清除 AI 缓存</button>
 									<span class="seo-auto-tags-test-result" data-seo-auto-tags-test-result></span>
-									<p class="description">测试使用已保存的配置，每分钟最多 5 次。</p>
+										<p class="description">测试使用已保存的配置，每分钟最多 5 次。清除缓存不会删除文章标签。</p>
 								</td>
 							</tr>
 						</table>

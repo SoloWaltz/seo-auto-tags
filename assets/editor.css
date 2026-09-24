@@ -94,9 +94,23 @@
 }
 
 .seo-auto-tags-name {
+	min-width: 0;
 	flex: 1 1 auto;
-	word-break: break-all;
+	padding: 4px 6px;
+	border: 1px solid transparent;
+	border-radius: 3px;
+	background: transparent;
 	color: #1d2327;
+	font-weight: 600;
+	line-height: 1.4;
+	word-break: break-all;
+}
+
+.seo-auto-tags-name:hover,
+.seo-auto-tags-name:focus {
+	border-color: #c3c4c7;
+	background: #fff;
+	outline: none;
 }
 
 .seo-auto-tags-badge {

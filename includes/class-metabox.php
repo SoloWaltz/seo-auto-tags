@@ -126,6 +126,9 @@ class SEO_Auto_Tags_Metabox {
 				<button type="button" class="button button-primary seo-auto-tags-btn" data-seo-auto-tags-generate>
 					生成标签
 				</button>
+				<button type="button" class="button button-secondary seo-auto-tags-btn" data-seo-auto-tags-copy hidden>
+					复制结果
+				</button>
 			</p>
 
 			<div class="seo-auto-tags-status" data-seo-auto-tags-status aria-live="polite"></div>

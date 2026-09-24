@@ -5,7 +5,7 @@ Tags: seo, tags, 标签, 自动标签, post_tag
 Requires at least: 5.8
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.11
+Stable tag: 1.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,6 +31,9 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 * 调用失败会说明原因：Key 无效 / 余额不足 / 被限流 / 地址写错，都直接告诉你
 * 标签屏蔽词：写进黑名单的词永远不会被推荐
 * 标签长度控制：中文 2~8 字，其中 3~6 字优先；超过 8 字的中文不会入选
+* 候选标签可直接编辑、复制，支持重新生成
+* AI 结果缓存可在设置页手动清除
+* 自动过滤明显重复或互相包含的标签
 
 == 为什么标签要控制数量 ==
 
@@ -163,6 +166,12 @@ WordPress 的每个标签都会生成一个归档页。标签建得太多太碎�
 * 插件本身不收集、不上传任何数据到第三方
 
 == Changelog ==
+
+= 1.4.0 =
+* 新增候选标签直接编辑与复制功能
+* 新增设置页「清除 AI 缓存」操作
+* 新增明显相似标签的保守去重，减少互相包含的标签
+* 编辑器生成接口增加文章编辑权限校验
 
 = 1.3.11 =
 * 修复 AI 缓存未区分接口、模型和候选数量，切换配置后可能复用旧结果的问题

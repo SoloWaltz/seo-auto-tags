@@ -150,6 +150,47 @@
 		} );
 	}
 
+	/* 清除 AI 结果缓存 */
+	function bindClearCache() {
+		var btn = q( '[data-seo-auto-tags-clear-cache]' );
+		var out = q( '[data-seo-auto-tags-test-result]' );
+
+		if ( ! btn || ! out ) {
+			return;
+		}
+
+		btn.addEventListener( 'click', function () {
+			if ( ! window.confirm( '确定清除所有 AI 结果缓存吗？不会删除文章标签。' ) ) {
+				return;
+			}
+
+			btn.disabled = true;
+			out.textContent = ' 清理中…';
+
+			var body = new URLSearchParams();
+			body.append( 'action', 'seo_auto_tags_clear_cache' );
+			body.append( 'nonce', cfg.nonce || '' );
+
+			fetch( cfg.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+				body: body.toString()
+			} )
+				.then( function ( r ) { return r.json(); } )
+				.then( function ( res ) {
+					var message = res && res.data && res.data.message ? res.data.message : '清理失败。';
+					out.textContent = ' ' + message;
+					out.className = 'seo-auto-tags-test-result ' + ( res && res.success ? 'is-ok' : 'is-error' );
+				} )
+				.catch( function () {
+					out.textContent = ' 清理失败，请刷新页面重试。';
+					out.className = 'seo-auto-tags-test-result is-error';
+				} )
+				.then( function () { btn.disabled = false; } );
+		} );
+	}
+
 	/* 保存成功提示 */
 	function bindSaveToast() {
 		var form = q( '[data-seo-auto-tags-form]' );
@@ -185,6 +226,7 @@
 			bindKeyToggle();
 			bindMode();
 			bindTest();
+			bindClearCache();
 			bindSaveToast();
 		} );
 	} else {
@@ -192,6 +234,7 @@
 		bindKeyToggle();
 		bindMode();
 		bindTest();
+		bindClearCache();
 		bindSaveToast();
 	}
 } )();
