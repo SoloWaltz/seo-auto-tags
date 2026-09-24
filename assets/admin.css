@@ -1,68 +1,837 @@
 /**
- * SEO 自动标签 · 设置页样式
+ * SEO 自动标签 · 设置页与文章列表样式
+ * 视觉方向：编辑工作台 / editorial workspace
  */
 
+:root {
+	--sat-ink: #17252b;
+	--sat-ink-soft: #2e444c;
+	--sat-muted: #718087;
+	--sat-faint: #9aa7ab;
+	--sat-paper: #f4f1eb;
+	--sat-panel: #fffdfa;
+	--sat-line: #d9dedb;
+	--sat-line-soft: #e8ebe8;
+	--sat-teal: #28737b;
+	--sat-teal-soft: #e9f3f1;
+	--sat-coral: #d86e51;
+	--sat-coral-soft: #fff0ea;
+	--sat-gold: #a87832;
+	--sat-gold-soft: #fbf3e3;
+	--sat-green: #33825b;
+	--sat-green-soft: #edf7f0;
+	--sat-red: #b94c4c;
+	--sat-red-soft: #fff0f0;
+}
+
+/* ---------- 外框：像一个小型编辑工作台 ---------- */
+
+.seo-auto-tags-wrap {
+	max-width: 1180px;
+	margin: 0 24px 0 0;
+	padding: 18px 0 36px;
+	color: var(--sat-ink);
+}
+
+.seo-auto-tags-heading {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 28px;
+	min-height: 92px;
+	margin: 0 0 16px;
+	padding: 22px 26px 20px;
+	background: var(--sat-ink);
+	border-radius: 6px;
+	box-shadow: 0 8px 22px rgba(23, 37, 43, 0.12);
+}
+
+.seo-auto-tags-eyebrow {
+	margin: 0 0 9px;
+	color: #a9c7c9;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+}
+
 .seo-auto-tags-wrap h1 {
-	margin-bottom: 6px;
+	margin: 0 0 8px;
+	color: #fffdf8;
+	font-size: clamp(24px, 3vw, 32px);
+	font-weight: 700;
+	letter-spacing: -0.035em;
+	line-height: 1.05;
 }
 
 .seo-auto-tags-lead {
-	max-width: 760px;
-	margin: 0 0 18px;
-	padding: 12px 16px;
-	background: #f0f6fc;
-	border-left: 4px solid #2271b1;
-	border-radius: 0 4px 4px 0;
-	font-size: 13.5px;
-	line-height: 1.7;
-	color: #1d2327;
+	max-width: 650px;
+	margin: 0;
+	color: #bbcbcd;
+	font-size: 13px;
+	line-height: 1.65;
 }
 
-.seo-auto-tags-wrap h2.title {
-	padding-top: 8px;
+.seo-auto-tags-lead strong {
+	color: #fff4d9;
 }
+
+.seo-auto-tags-heading-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	border-radius: 4px;
+	color: #fff6dc;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.seo-auto-tags-heading-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #7fd19a;
+	box-shadow: 0 0 0 3px rgba(127, 209, 154, 0.15);
+}
+
+/* ---------- 顶部概览：不是三张普通卡片，而是一条状态带 ---------- */
+
+.seo-auto-tags-overview {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 0;
+	max-width: 100%;
+	margin: 0 0 14px;
+	border: 1px solid var(--sat-line);
+	border-radius: 5px;
+	background: var(--sat-panel);
+	overflow: hidden;
+}
+
+.seo-auto-tags-overview-item {
+	position: relative;
+	min-height: 64px;
+	padding: 13px 18px 12px;
+	background: transparent;
+}
+
+.seo-auto-tags-overview-item + .seo-auto-tags-overview-item {
+	border-left: 1px solid var(--sat-line-soft);
+}
+
+.seo-auto-tags-overview-item::before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 3px;
+	content: '';
+	background: var(--sat-teal);
+}
+
+.seo-auto-tags-overview-item:nth-child(2)::before {
+	background: var(--sat-coral);
+}
+
+.seo-auto-tags-overview-item:nth-child(3)::before {
+	background: var(--sat-gold);
+}
+
+.seo-auto-tags-overview-item .k,
+.seo-auto-tags-overview-item .hint {
+	display: block;
+	color: var(--sat-muted);
+	font-size: 11px;
+	line-height: 1.4;
+}
+
+.seo-auto-tags-overview-item .v {
+	display: block;
+	margin: 3px 0 1px;
+	color: var(--sat-ink);
+	font-size: 17px;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.seo-auto-tags-overview-item .v small {
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.seo-auto-tags-overview-item .hint {
+	color: var(--sat-faint);
+	font-size: 11px;
+}
+
+/* ---------- 提示条：同一条基线、不同语义色 ---------- */
+
+.seo-auto-tags-env {
+	width: 100%;
+	max-width: none;
+	box-sizing: border-box;
+	margin: 0 0 14px;
+	padding: 10px 14px;
+	border: 1px solid var(--sat-line);
+	border-left: 4px solid var(--sat-teal);
+	border-radius: 4px;
+	background: var(--sat-teal-soft);
+	color: var(--sat-ink-soft);
+	font-size: 12px;
+	line-height: 1.6;
+}
+
+.seo-auto-tags-env-warn {
+	border-color: #ead9b7;
+	border-left-color: var(--sat-gold);
+	background: var(--sat-gold-soft);
+}
+
+.seo-auto-tags-env-error {
+	border-color: #edc8c8;
+	border-left-color: var(--sat-red);
+	background: var(--sat-red-soft);
+}
+
+.seo-auto-tags-env-ok {
+	border-color: #cfe4d6;
+	border-left-color: var(--sat-green);
+	background: var(--sat-green-soft);
+	color: #2f6549;
+}
+
+.seo-auto-tags-env-title {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 0;
+	cursor: pointer;
+	font-weight: 700;
+	list-style: none;
+}
+
+.seo-auto-tags-env-title::-webkit-details-marker,
+.seo-auto-tags-advanced summary::-webkit-details-marker,
+.seo-auto-tags-consume-details summary::-webkit-details-marker,
+.seo-auto-tags-health-toggle summary::-webkit-details-marker {
+	display: none;
+}
+
+.seo-auto-tags-env-title::after,
+.seo-auto-tags-advanced > summary::after,
+.seo-auto-tags-consume-details > summary::after,
+.seo-auto-tags-health-toggle > summary::after {
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	margin-left: auto;
+	border: 1px solid var(--sat-coral);
+	border-radius: 50%;
+	background: var(--sat-coral);
+	box-sizing: border-box;
+	color: #fffdf8;
+	content: '+';
+	font-size: 22px;
+	font-weight: 400;
+	line-height: 1;
+	box-shadow: 0 2px 5px rgba(216, 110, 81, 0.24);
+	transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.seo-auto-tags-env-title:hover::after,
+.seo-auto-tags-advanced > summary:hover::after,
+.seo-auto-tags-consume-details > summary:hover::after,
+.seo-auto-tags-health-toggle > summary:hover::after {
+	background: #bd5b42;
+	transform: scale(1.08);
+}
+
+.seo-auto-tags-env[open] .seo-auto-tags-env-title::after,
+.seo-auto-tags-advanced[open] > summary::after,
+.seo-auto-tags-consume-details[open] > summary::after,
+.seo-auto-tags-health-toggle[open] > summary::after {
+	background: var(--sat-ink);
+	border-color: var(--sat-ink);
+	content: '−';
+	box-shadow: 0 2px 5px rgba(23, 37, 43, 0.2);
+}
+
+.seo-auto-tags-env-warn .seo-auto-tags-env-title {
+	color: #795c26;
+}
+
+.seo-auto-tags-env-error .seo-auto-tags-env-title {
+	color: #963b3b;
+}
+
+.seo-auto-tags-env ul {
+	margin: 9px 0 0;
+	padding-left: 19px;
+}
+
+.seo-auto-tags-env li {
+	margin-bottom: 3px;
+}
+
+/* ---------- 主布局 ---------- */
+
+.seo-auto-tags-wrap form[data-seo-auto-tags-form] {
+	max-width: none;
+}
+
+.seo-auto-tags-settings-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 292px;
+	align-items: start;
+	gap: 18px;
+}
+
+.seo-auto-tags-settings-main {
+	min-width: 0;
+}
+
+.seo-auto-tags-settings-side {
+	position: sticky;
+	top: 42px;
+	min-width: 0;
+}
+
+.seo-auto-tags-settings-side .seo-auto-tags-side-card,
+.seo-auto-tags-settings-side .seo-auto-tags-health-toggle {
+	margin: 0 0 14px;
+}
+
+/* ---------- 内容区：扁平纸张，不再堆满圆角卡片 ---------- */
+
+.seo-auto-tags-section {
+	position: relative;
+	max-width: none;
+	margin: 0 0 14px;
+	padding: 20px 24px 21px;
+	overflow: hidden;
+	background: var(--sat-panel);
+	border: 1px solid var(--sat-line);
+	border-radius: 5px;
+	box-shadow: 0 3px 10px rgba(23, 37, 43, 0.045);
+}
+
+.seo-auto-tags-section::before {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	width: 4px;
+	content: '';
+	background: var(--sat-teal);
+}
+
+.seo-auto-tags-settings-main > .seo-auto-tags-section:nth-child(2)::before {
+	background: var(--sat-coral);
+}
+
+.seo-auto-tags-settings-main > .seo-auto-tags-section:nth-child(3)::before {
+	background: var(--sat-gold);
+}
+
+.seo-auto-tags-section h2.title {
+	margin: 0 0 11px;
+	padding: 0 0 11px;
+	border-bottom: 1px solid var(--sat-line-soft);
+	color: var(--sat-ink);
+	font-size: 15px;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.seo-auto-tags-section .description {
+	max-width: 100%;
+	margin-top: 5px;
+	color: var(--sat-muted);
+	font-size: 12px;
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.seo-auto-tags-section td,
+.seo-auto-tags-side-card,
+.seo-auto-tags-health-toggle {
+	overflow-wrap: anywhere;
+	word-break: break-word;
+}
+
+.seo-auto-tags-section code,
+.seo-auto-tags-side-card code {
+	word-break: break-all;
+}
+
+.seo-auto-tags-section .form-table {
+	width: 100%;
+	margin-top: 0;
+	table-layout: auto;
+}
+
+.seo-auto-tags-section .form-table tr + tr {
+	border-top: 1px solid var(--sat-line-soft);
+}
+
+.seo-auto-tags-section .form-table th {
+	width: 170px;
+	padding: 11px 16px 11px 0;
+	color: var(--sat-ink-soft);
+	font-size: 12px;
+	font-weight: 700;
+	vertical-align: top;
+}
+
+.seo-auto-tags-section .form-table td {
+	padding: 11px 0;
+	color: var(--sat-ink-soft);
+	font-size: 13px;
+	vertical-align: top;
+}
+
+.seo-auto-tags-section .form-table tr:first-child th,
+.seo-auto-tags-section .form-table tr:first-child td {
+	padding-top: 4px;
+}
+
+/* ---------- 选项：用状态块代替大面积灰卡片 ---------- */
 
 .seo-auto-tags-radio {
-	display: block;
-	margin-bottom: 4px;
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	margin: 0 0 7px;
+	padding: 10px 12px;
+	border: 1px solid var(--sat-line-soft);
+	border-radius: 4px;
+	background: #fcfcf9;
+	cursor: pointer;
+	transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
 }
 
+.seo-auto-tags-radio:hover {
+	border-color: #a8c5c6;
+	background: var(--sat-teal-soft);
+	transform: translateX(2px);
+}
+
+.seo-auto-tags-radio input[type="radio"] {
+	margin-top: 2px;
+	accent-color: var(--sat-teal);
+	flex: none;
+}
+
+.seo-auto-tags-radio strong {
+	color: var(--sat-ink);
+	font-weight: 700;
+}
+
+.seo-auto-tags-radio + .description {
+	margin: -1px 0 10px 30px;
+}
+
+/* ---------- 控件 ---------- */
+
+.seo-auto-tags-section input[type="text"],
+.seo-auto-tags-section input[type="password"],
+.seo-auto-tags-section input[type="number"],
+.seo-auto-tags-section select,
+.seo-auto-tags-section textarea {
+	max-width: 100%;
+	box-sizing: border-box;
+	border: 1px solid #c7d0d0;
+	border-radius: 3px;
+	background: #fff;
+	box-shadow: inset 0 1px 1px rgba(23, 37, 43, 0.025);
+	transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.seo-auto-tags-section input[type="text"]:focus,
+.seo-auto-tags-section input[type="password"]:focus,
+.seo-auto-tags-section input[type="number"]:focus,
+.seo-auto-tags-section select:focus,
+.seo-auto-tags-section textarea:focus {
+	border-color: var(--sat-teal);
+	box-shadow: 0 0 0 2px rgba(40, 115, 123, 0.14);
+	outline: none;
+}
+
+.seo-auto-tags-section textarea {
+	min-height: 96px;
+	font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.seo-auto-tags-key-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 7px;
+}
+
+.seo-auto-tags-key-row input[type="password"],
+.seo-auto-tags-key-row input[type="text"] {
+	max-width: 460px;
+	flex: 1 1 auto;
+}
+
+.seo-auto-tags-section .button-secondary,
+.seo-auto-tags-section .button {
+	border-color: #bbc8c9;
+	border-radius: 3px;
+	color: var(--sat-ink-soft);
+}
+
+/* ---------- 状态提示 ---------- */
+
 .seo-auto-tags-ok {
-	color: #00a32a;
-	font-weight: 600;
+	color: var(--sat-green);
+	font-weight: 700;
+}
+
+.seo-auto-tags-broken {
+	margin: 0 0 9px;
+	padding: 9px 12px;
+	border: 1px solid #edc8c8;
+	border-left: 3px solid var(--sat-red);
+	border-radius: 3px;
+	background: var(--sat-red-soft);
+	color: #963b3b;
+	font-size: 12px;
 }
 
 .seo-auto-tags-test-result {
 	display: inline-block;
-	margin-left: 8px;
-	font-size: 13px;
+	margin-left: 9px;
+	font-size: 12px;
 	line-height: 1.6;
 	vertical-align: middle;
-	word-break: break-all;
+	word-break: break-word;
 }
 
 .seo-auto-tags-test-result.is-ok {
-	color: #00a32a;
+	color: var(--sat-green);
+	font-weight: 700;
 }
 
 .seo-auto-tags-test-result.is-error {
-	color: #d63638;
+	color: var(--sat-red);
 }
 
-.seo-auto-tags-footer {
-	max-width: 760px;
-	margin-top: 26px;
-	padding: 16px 20px;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-left: 4px solid #00a32a;
+/* ---------- 侧栏 ---------- */
+
+.seo-auto-tags-side-card {
+	position: relative;
+	margin: 0 0 14px;
+	padding: 17px 18px 18px;
+	border: 1px solid var(--sat-line);
+	border-radius: 5px;
+	background: var(--sat-panel);
+	box-shadow: 0 3px 10px rgba(23, 37, 43, 0.045);
+}
+
+.seo-auto-tags-side-card::before {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	height: 3px;
+	content: '';
+	background: var(--sat-coral);
+}
+
+.seo-auto-tags-side-card h2 {
+	margin: 0 0 7px;
+	color: var(--sat-ink);
+	font-size: 14px;
+	font-weight: 700;
+}
+
+.seo-auto-tags-side-card p {
+	margin: 0;
+	color: var(--sat-muted);
+	font-size: 12px;
+	line-height: 1.7;
+}
+
+.seo-auto-tags-side-kicker {
+	margin-bottom: 6px !important;
+	color: var(--sat-coral) !important;
+	font-size: 10px !important;
+	font-weight: 800;
+	letter-spacing: 0.17em;
+}
+
+.seo-auto-tags-side-flow {
+	display: grid;
+	gap: 7px;
+	margin-top: 14px;
+	padding-top: 12px;
+	border-top: 1px solid var(--sat-line-soft);
+}
+
+.seo-auto-tags-side-flow span {
+	color: var(--sat-ink-soft);
+	font-size: 12px;
+}
+
+.seo-auto-tags-side-flow b {
+	display: inline-grid;
+	place-items: center;
+	width: 24px;
+	height: 22px;
+	margin-right: 7px;
+	border-radius: 3px;
+	background: var(--sat-coral-soft);
+	color: var(--sat-coral);
+	font-size: 10px;
+}
+
+/* ---------- 折叠区：线框式，不再像套娃卡片 ---------- */
+
+.seo-auto-tags-advanced,
+.seo-auto-tags-consume-details,
+.seo-auto-tags-health-toggle {
+	border: 1px solid var(--sat-line);
 	border-radius: 4px;
+	background: #fbfcfa;
+}
+
+.seo-auto-tags-advanced {
+	margin-top: 11px;
+	padding: 0 13px 12px;
+}
+
+.seo-auto-tags-advanced > summary,
+.seo-auto-tags-consume-details > summary,
+.seo-auto-tags-health-toggle > summary {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 11px 2px;
+	cursor: pointer;
+	list-style: none;
+	color: var(--sat-ink-soft);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.seo-auto-tags-advanced > summary span,
+.seo-auto-tags-health-toggle > summary span {
+	color: var(--sat-faint);
+	font-size: 11px;
+	font-weight: 400;
+}
+
+.seo-auto-tags-advanced .form-table {
+	margin: 0;
+}
+
+.seo-auto-tags-advanced .form-table th,
+.seo-auto-tags-advanced .form-table td {
+	padding-top: 9px;
+	padding-bottom: 9px;
+}
+
+.seo-auto-tags-consume-details {
+	margin-top: 9px;
+	padding: 0 12px;
+	border-color: #eadcbf;
+	background: #fffaf0;
+}
+
+.seo-auto-tags-consume-details > summary {
+	padding: 9px 0;
+	color: #765d20;
+}
+
+.seo-auto-tags-consume {
+	margin: 8px 0 4px;
+	padding: 13px 15px;
+	border: 1px solid #eadcbf;
+	border-left: 3px solid var(--sat-gold);
+	border-radius: 3px;
+	background: #fffdf7;
+	color: var(--sat-ink-soft);
+	font-size: 12px;
+	line-height: 1.65;
+}
+
+.seo-auto-tags-consume p {
+	margin: 0 0 7px;
+}
+
+.seo-auto-tags-consume ul {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.seo-auto-tags-consume li {
+	margin-bottom: 4px;
+}
+
+.seo-auto-tags-usage {
+	padding-bottom: 9px;
+	border-bottom: 1px dashed #e6d7b6;
+}
+
+.seo-auto-tags-usage strong {
+	color: #765d20;
+	font-size: 14px;
+}
+
+.seo-auto-tags-usage .description {
+	display: block;
+	margin-top: 2px;
+	font-size: 11px;
+}
+
+.seo-auto-tags-ai-block {
+	margin-top: 4px;
+	overflow: visible;
+}
+
+/* ---------- 标签健康度 ---------- */
+
+.seo-auto-tags-health-toggle {
+	max-width: none;
+	margin: 0 0 14px;
+	padding: 0 13px;
+	background: var(--sat-panel);
+}
+
+.seo-auto-tags-health-toggle > summary {
+	padding: 12px 2px;
+}
+
+.seo-auto-tags-health-toggle .seo-auto-tags-health {
+	max-width: none;
+	margin: 0 0 10px;
+	padding: 13px 0 0;
+	border: 0;
+	border-top: 1px solid var(--sat-line-soft);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.seo-auto-tags-health h2.title {
+	margin: 0 0 9px;
+	padding: 0;
+	border: 0;
+	color: var(--sat-ink);
+	font-size: 14px;
+}
+
+.seo-auto-tags-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	margin: 12px 0 11px;
+}
+
+.seo-auto-tags-stat {
+	flex: 1 1 105px;
+	min-width: 100px;
+	padding: 10px 11px;
+	border: 1px solid var(--sat-line-soft);
+	border-radius: 3px;
+	background: #fbfcfa;
+	text-align: left;
+}
+
+.seo-auto-tags-stat .k {
+	display: block;
+	margin-bottom: 4px;
+	color: var(--sat-muted);
+	font-size: 11px;
+	line-height: 1.35;
+}
+
+.seo-auto-tags-stat .v {
+	display: block;
+	color: var(--sat-ink);
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.1;
+}
+
+.seo-auto-tags-stat .v.is-warn {
+	color: var(--sat-gold);
+}
+
+.seo-auto-tags-tip {
+	margin: 6px 0 0;
+	padding: 8px 10px;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 1.55;
+}
+
+.seo-auto-tags-tip.is-ok {
+	border-left: 3px solid var(--sat-green);
+	background: var(--sat-green-soft);
+}
+
+.seo-auto-tags-tip.is-warn {
+	border-left: 3px solid var(--sat-gold);
+	background: var(--sat-gold-soft);
+}
+
+/* ---------- 保存栏：稳定、全宽的行动条，不悬浮 ---------- */
+
+.seo-auto-tags-wrap form[data-seo-auto-tags-form] > p.submit {
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0 0 14px;
+	padding: 13px 18px;
+	border: 1px solid var(--sat-line);
+	border-left: 4px solid var(--sat-teal);
+	border-radius: 5px;
+	background: var(--sat-panel);
+	box-shadow: 0 3px 10px rgba(23, 37, 43, 0.06);
+	text-align: right;
+}
+
+.seo-auto-tags-wrap form[data-seo-auto-tags-form] > p.submit .button-primary {
+	min-height: 35px;
+	padding: 0 20px;
+	border: 0;
+	border-radius: 3px;
+	background: var(--sat-coral);
+	box-shadow: 0 2px 0 #b6533b;
+	font-weight: 700;
+	transition: background 0.16s ease, transform 0.16s ease;
+}
+
+.seo-auto-tags-wrap form[data-seo-auto-tags-form] > p.submit .button-primary:hover {
+	background: #bd5b42;
+	transform: translateY(-1px);
+}
+
+/* ---------- 使用说明与署名：底部三栏统一卡片、全宽对齐 ---------- */
+
+.seo-auto-tags-footer {
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0 0 14px;
+	padding: 14px 18px;
+	border: 1px solid #cfe4d6;
+	border-left: 4px solid var(--sat-green);
+	border-radius: 5px;
+	background: var(--sat-green-soft);
 }
 
 .seo-auto-tags-footer p {
-	margin: 0 0 8px;
-	font-size: 13.5px;
-	line-height: 1.7;
+	margin: 0 0 6px;
+	color: #38634a;
+	font-size: 12px;
+	line-height: 1.65;
 }
 
 .seo-auto-tags-footer p:last-child {
@@ -70,166 +839,265 @@
 }
 
 .seo-auto-tags-credit {
-	padding-top: 10px;
-	margin-top: 10px;
-	border-top: 1px dashed #e4e7ec;
-	color: #5b6472;
-	font-size: 12.5px;
-}
-
-.seo-auto-tags-credit a {
-	color: #2271b1;
-}
-
-/* ---------- AI 消耗清单 ---------- */
-
-.seo-auto-tags-consume {
-	max-width: 760px;
-	margin: 4px 0 0;
-	padding: 14px 18px;
-	background: #fdf7ec;
-	border-left: 3px solid #dba617;
-	border-radius: 0 6px 6px 0;
-	font-size: 13.5px;
-	line-height: 1.75;
-}
-
-.seo-auto-tags-consume p {
-	margin: 0 0 8px;
-}
-
-.seo-auto-tags-consume p:last-child {
-	margin-bottom: 0;
-}
-
-.seo-auto-tags-consume ul {
-	margin: 0 0 10px;
-	padding-left: 20px;
-}
-
-.seo-auto-tags-consume li {
-	margin-bottom: 5px;
-}
-
-.seo-auto-tags-usage {
-	padding-bottom: 10px;
-	margin-bottom: 12px !important;
-	border-bottom: 1px dashed #e0d3b8;
-}
-
-.seo-auto-tags-usage strong {
-	font-size: 15px;
-	color: #7a4a00;
-}
-
-.seo-auto-tags-usage .description {
-	display: block;
-	margin-top: 2px;
-	font-size: 12.5px;
-}
-
-.seo-auto-tags-ai-block {
-	margin-top: 4px;
-}
-
-/* ---------- 标签健康度 ---------- */
-
-.seo-auto-tags-health {
-	max-width: 900px;
-	margin-top: 26px;
-	padding: 20px 24px 24px;
-	background: #fff;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-}
-
-.seo-auto-tags-health h2.title {
-	margin-top: 0;
-	padding-top: 0;
-}
-
-.seo-auto-tags-stats {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-	margin: 16px 0 14px;
+	align-items: center;
+	gap: 13px;
+	width: 100%;
+	box-sizing: border-box;
+	margin: 0 0 14px;
+	padding: 14px 18px;
+	border: 1px solid var(--sat-line);
+	border-left: 4px solid var(--sat-coral);
+	border-radius: 5px;
+	background: var(--sat-panel);
+	box-shadow: 0 3px 10px rgba(23, 37, 43, 0.06);
 }
 
-.seo-auto-tags-stat {
-	flex: 1 1 150px;
-	min-width: 130px;
-	padding: 12px 14px;
-	background: #fafbfc;
-	border: 1px solid #e4e7ec;
-	border-radius: 8px;
+.seo-auto-tags-credit-mark {
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	flex: 0 0 38px;
+	border-radius: 50%;
+	background: var(--sat-ink);
+	color: #fff4d9;
+	font-size: 19px;
+	font-weight: 800;
+	box-shadow: 0 0 0 4px var(--sat-coral-soft);
 }
 
-.seo-auto-tags-stat .k {
-	display: block;
-	margin-bottom: 6px;
-	color: #5b6472;
-	font-size: 12px;
-	line-height: 1.4;
+.seo-auto-tags-credit-copy {
+	min-width: 0;
 }
 
-.seo-auto-tags-stat .v {
-	display: block;
-	color: #1d2327;
-	font-size: 22px;
+.seo-auto-tags-credit-kicker {
+	margin: 0 0 3px;
+	color: var(--sat-coral);
+	font-size: 9px;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+}
+
+.seo-auto-tags-credit-line {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin: 0 0 2px;
+	color: var(--sat-ink);
+	font-size: 13px;
+}
+
+.seo-auto-tags-credit-line strong {
+	font-weight: 800;
+}
+
+.seo-auto-tags-credit-line span {
+	color: var(--sat-muted);
+	font-size: 11px;
+}
+
+.seo-auto-tags-credit-site {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 4px;
+	font-size: 11px;
+}
+
+.seo-auto-tags-credit-site a {
+	color: var(--sat-teal);
 	font-weight: 600;
-	line-height: 1.2;
 }
 
-.seo-auto-tags-stat .v.is-warn {
-	color: #b26200;
+.seo-auto-tags-credit-license {
+	padding: 2px 6px;
+	border-radius: 3px;
+	background: var(--sat-teal-soft);
+	color: var(--sat-teal);
+	font-size: 10px;
 }
 
-.seo-auto-tags-tip {
-	margin: 8px 0 0;
-	padding: 10px 14px;
+.seo-auto-tags-credit .description {
+	margin: 0;
+	color: var(--sat-faint);
+	font-size: 10px;
+}
+
+/* ---------- 保存提示 ---------- */
+
+.seo-auto-tags-toast {
+	position: fixed;
+	top: 48px;
+	right: 24px;
+	z-index: 99999;
+	padding: 11px 17px;
+	border-left: 4px solid var(--sat-green);
 	border-radius: 4px;
-	font-size: 13.5px;
-	line-height: 1.7;
+	background: var(--sat-ink);
+	box-shadow: 0 6px 18px rgba(23, 37, 43, 0.22);
+	color: #fffdf8;
+	font-size: 13px;
+	font-weight: 700;
+	opacity: 0;
+	transform: translateX(120%);
+	transition: opacity 0.24s ease, transform 0.24s ease;
 }
 
-.seo-auto-tags-tip.is-ok {
-	background: #edfaef;
-	border-left: 3px solid #00a32a;
+.seo-auto-tags-toast.is-show {
+	opacity: 1;
+	transform: translateX(0);
 }
 
-.seo-auto-tags-tip.is-warn {
-	background: #fef8ee;
-	border-left: 3px solid #dba617;
+.seo-auto-tags-toast.is-hide {
+	opacity: 0;
+	transform: translateX(120%);
 }
 
-/* ---------- 文章列表的标签列 ---------- */
+/* ---------- 文章列表标签列 ---------- */
 
 .column-seo_auto_tags_tags {
 	width: 120px;
 }
 
 .seo-auto-tags-col-empty {
-	color: #b26200;
+	color: var(--sat-gold);
 }
 
 .seo-auto-tags-col-count {
-	color: #1d2327;
+	color: var(--sat-ink);
 }
 
 .seo-auto-tags-col-btn {
 	margin-top: 4px;
 	display: inline-block;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--sat-teal);
 	font-size: 12px;
-	color: #2271b1;
 	text-decoration: underline;
 	cursor: pointer;
-	background: none;
-	border: 0;
-	padding: 0;
 }
 
 .seo-auto-tags-col-btn[disabled] {
-	color: #8c8f94;
+	color: #8c989b;
 	text-decoration: none;
 	cursor: default;
 }
+
+/* ---------- 响应式 ---------- */
+
+@media screen and (max-width: 960px) {
+	.seo-auto-tags-wrap {
+		margin-right: 16px;
+	}
+}
+
+@media screen and (max-width: 782px) {
+	.seo-auto-tags-wrap {
+		margin-right: 10px;
+		padding-top: 8px;
+	}
+
+	.seo-auto-tags-heading {
+		align-items: flex-start;
+		flex-direction: column;
+		gap: 13px;
+		min-height: 0;
+		padding: 18px 16px 17px;
+	}
+
+	.seo-auto-tags-heading-badge {
+		margin-top: 0;
+	}
+
+	.seo-auto-tags-overview {
+		grid-template-columns: 1fr;
+	}
+
+	.seo-auto-tags-overview-item + .seo-auto-tags-overview-item {
+		border-top: 1px solid var(--sat-line-soft);
+		border-left: 0;
+	}
+
+	.seo-auto-tags-settings-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.seo-auto-tags-settings-side {
+		position: static;
+	}
+
+	.seo-auto-tags-section {
+		padding: 17px 14px 16px;
+	}
+
+	.seo-auto-tags-section .form-table th,
+	.seo-auto-tags-section .form-table td {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		padding: 7px 0;
+	}
+
+	.seo-auto-tags-section .form-table th {
+		padding-bottom: 2px;
+	}
+
+	.seo-auto-tags-key-row {
+		align-items: stretch;
+		flex-wrap: wrap;
+	}
+
+	.seo-auto-tags-key-row input[type="password"],
+	.seo-auto-tags-key-row input[type="text"] {
+		max-width: none;
+		width: 100%;
+		flex-basis: 100%;
+	}
+
+	.seo-auto-tags-credit {
+		align-items: flex-start;
+		max-width: none;
+	}
+
+	.seo-auto-tags-credit-line,
+	.seo-auto-tags-credit-site {
+		flex-wrap: wrap;
+	}
+
+	.seo-auto-tags-stats {
+		gap: 6px;
+	}
+
+	.seo-auto-tags-stat {
+		flex: 1 1 90px;
+		min-width: 90px;
+	}
+
+	.seo-auto-tags-toast {
+		top: auto;
+		bottom: 24px;
+		right: 16px;
+		left: 16px;
+		transform: translateY(120%);
+	}
+
+	.seo-auto-tags-toast.is-show {
+		transform: translateY(0);
+	}
+
+	.seo-auto-tags-toast.is-hide {
+		transform: translateY(120%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.seo-auto-tags-radio,
+	.seo-auto-tags-wrap form[data-seo-auto-tags-form] > p.submit .button-primary,
+	.seo-auto-tags-toast {
+		transition: none;
+	}
+}
+

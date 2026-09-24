@@ -17,20 +17,15 @@ class SEO_Auto_Tags_Generator {
 	/**
 	 * 单次分析的最大字符数。
 	 *
-	 * n-gram 的候选数量与正文长度成正比。实测 20 万字正文会吃掉 44MB 内存、
-	 * 耗时 1.3 秒 —— 而 2G 内存的小机器上 PHP 默认 memory_limit 只有 128M，
-	 * 再叠加 WordPress 自身开销就很危险了。
-	 *
-	 * 所以超长正文只做「均匀跳段采样」，控制在 3 万字以内。
-	 * 提取关键词本来也不需要读完每一个字。
+	 * n-gram 的候选数量与正文长度成正比，超长正文会显著抬高峰值内存。
+	 * 超出部分按段落均匀采样，只取这个量。
 	 */
 	const MAX_ANALYZE_CHARS = 30000;
 
 	/**
 	 * 发给 AI 的正文预算（字符）。
 	 *
-	 * 4000 字约 2400 token，一次调用成本几厘钱 —— 够用且不心疼。
-	 * 想更省就把「结果缓存」开着，同内容不会重复发。
+	 * 约 2400 token，足够判断主题。超出部分做头尾采样。
 	 */
 	const AI_INPUT_CHARS = 4000;
 
@@ -52,7 +47,7 @@ class SEO_Auto_Tags_Generator {
 			return new WP_Error( 'seo_auto_tags_too_short', '正文太短（不足 40 字），没法分析。先写点内容再试。' );
 		}
 
-		$ai_mode    = ( 'ai' === $opt['mode'] && '' !== trim( (string) $opt['api_key'] ) );
+		$ai_mode    = ( 'ai' === $opt['mode'] && '' !== SEO_Auto_Tags_Settings::api_key() );
 		$tags       = array();
 		$used_ai    = false;
 		$from_cache = false;
@@ -60,9 +55,9 @@ class SEO_Auto_Tags_Generator {
 
 		if ( $ai_mode ) {
 			$ttl  = isset( $opt['cache_ttl'] ) ? absint( $opt['cache_ttl'] ) : 24;
-			$ckey = self::ai_cache_key( $title, $content );
+			$ckey = self::ai_cache_key( $title, $content, $count );
 
-			// 先看缓存：同样的内容不重复花钱。
+			// 先查缓存。
 			if ( $ttl > 0 ) {
 				$cached = get_transient( $ckey );
 				if ( is_array( $cached ) && ! empty( $cached ) ) {
@@ -81,7 +76,7 @@ class SEO_Auto_Tags_Generator {
 					$res = self::via_ai( $title, $content, $count, $opt );
 
 					if ( is_wp_error( $res ) ) {
-						// 把具体原因带给用户，别让他对着「AI 未成功」猜。
+						// 保留失败原因，供界面展示。
 						$note = 'AI 调用失败：' . $res->get_error_message();
 					} else {
 						$tags    = $res;
@@ -101,12 +96,16 @@ class SEO_Auto_Tags_Generator {
 
 		$tags = self::finalize( $tags, $count );
 
-		// 本地算法过滤太狠、候选凑不满时，分级放宽补齐：
-		//   级别 1 —— 允许「不贴边界」的词（降权），但仍过滤泛用词
-		//   级别 2 —— 再允许泛用词
-		// 严格结果永远排在最前面，放宽只用来「补位」。
+		// 候选不足时按级别放宽补齐，严格结果优先。
 		if ( ! $used_ai && count( $tags ) < $count ) {
-			foreach ( array( 1, 2 ) as $level ) {
+			$levels = array( 1 );
+
+			// 连 3 个都凑不出时才允许泛用词兜底，宁可少给也不要塞垃圾词。
+			if ( count( $tags ) < 3 ) {
+				$levels[] = 2;
+			}
+
+			foreach ( $levels as $level ) {
 				if ( count( $tags ) >= $count ) {
 					break;
 				}
@@ -138,21 +137,33 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * AI 结果的缓存键：按「标题 + 正文」指纹。
+	 * AI 结果的缓存键：按「标题 + 正文 + 接口配置」指纹。
 	 *
 	 * @param string $title   标题。
 	 * @param string $content 正文。
 	 * @return string
 	 */
-	private static function ai_cache_key( $title, $content ) {
-		return 'seo_auto_tags_ai_' . md5( $title . '|' . $content );
+	private static function ai_cache_key( $title, $content, $count = 0 ) {
+		$opt     = SEO_Auto_Tags_Settings::get();
+		$context = implode(
+			'|',
+			array(
+				$title,
+				$content,
+				(string) $count,
+				(string) $opt['api_base'],
+				(string) $opt['model'],
+				(string) $opt['provider'],
+			)
+		);
+
+		return 'seo_auto_tags_ai_' . md5( $context );
 	}
 
 	/**
 	 * AI 调用频率限制（按用户、按小时）。
 	 *
-	 * 作者 / 编辑角色都能用这个插件。如果不限速，一个人手滑连点几下
-	 * 就能把站长的 API 额度刷光 —— 这是真实存在的风险。
+	 * 作者与编辑角色均可使用本插件，不限速会持续消耗 API 额度。
 	 *
 	 * @param array $opt 设置。
 	 * @return true|WP_Error
@@ -164,11 +175,8 @@ class SEO_Auto_Tags_Generator {
 			return true; // 0 表示不限速。
 		}
 
-		// 用「小时时间片」做键，天然是固定窗口。
-		//
-		// 不能用 set_transient( $key, $n + 1, HOUR_IN_SECONDS ) 续期 ——
-		// 那样每次调用都会把过期时间往后推，计数永远不复位：
-		// 一个每小时只调 1 次的人，30 小时后也会被锁死。
+		// 用小时时间片做键，构成固定窗口。
+		// 若直接对同一个键续期，过期时间会不断后推，计数无法复位。
 		$slot = (int) floor( time() / HOUR_IN_SECONDS );
 		$key  = 'seo_auto_tags_rl_' . get_current_user_id() . '_' . $slot;
 
@@ -188,10 +196,9 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 「测试连接」的轻量节流。
+	 * 「测试连接」的节流。
 	 *
-	 * 测试本身也会消耗极少量 token，连点花不了几分钱，
-	 * 但没必要 —— 顺手挡一下，也避免 DNS 校验被刷。
+	 * 测试会消耗少量 token，且附带 DNS 解析，需限制调用频率。
 	 *
 	 * @return true|WP_Error
 	 */
@@ -211,7 +218,7 @@ class SEO_Auto_Tags_Generator {
 	/**
 	 * 清洗文本：去短代码、脚本、HTML、网址。
 	 *
-	 * 注意：会保留段落换行 —— 后面做超长文本采样时要用段落做单位。
+	 * 保留段落换行，供后续采样按段落切分。
 	 *
 	 * @param string $text 原始文本。
 	 * @return string
@@ -239,10 +246,9 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 超长正文做均匀跳段采样，把参与分析的文本压到预算以内。
+	 * 超长正文按段落跳段采样，压到预算以内。
 	 *
-	 * 之所以用「跳段」而不是「截断前 N 字」：资源整合类文章的关键词
-	 * 常常分散在全篇，直接砍掉后半段会漏词。
+	 * 关键词常分散在全篇，逐段取样比截断前半段覆盖更全。
 	 *
 	 * @param string $text 已清洗的正文。
 	 * @return string
@@ -273,7 +279,7 @@ class SEO_Auto_Tags_Generator {
 		$used   = 0;
 		$step   = max( 1, (int) ceil( $total / 80 ) );
 
-		// 第一轮：均匀跳段，先保证全文都被覆盖到。
+		// 均匀跳段，保证全文都被覆盖。
 		for ( $i = 0; $i < $total; $i += $step ) {
 			$l = self::len( $paras[ $i ] );
 			if ( $used + $l > self::MAX_ANALYZE_CHARS ) {
@@ -283,7 +289,7 @@ class SEO_Auto_Tags_Generator {
 			$used    += $l;
 		}
 
-		// 第二轮：预算还没吃满，把跳过的段落按顺序补回来。
+		// 预算还有剩余，补回跳过的段落。
 		if ( $used < self::MAX_ANALYZE_CHARS ) {
 			for ( $i = 0; $i < $total; $i++ ) {
 				if ( 0 === $i % $step ) {
@@ -302,10 +308,9 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 给 AI 的正文做「头 + 尾」采样，控制在字符预算内。
+	 * 给 AI 的正文做头尾采样，控制在字符预算内。
 	 *
-	 * 直接截断前 N 字会漏掉文章后半段的关键词。
-	 * 开头（摘要）和结尾（总结）的信息密度最高，同样的 token 预算下覆盖更全。
+	 * 首尾信息密度高于中段，同预算下覆盖更全。
 	 *
 	 * @param string $content 已清洗的正文。
 	 * @param int    $budget  字符预算。
@@ -334,7 +339,6 @@ class SEO_Auto_Tags_Generator {
 
 		$half = (int) floor( $budget / 2 );
 
-		// 从头取一半。
 		$head    = array();
 		$used    = 0;
 		$head_to = -1;
@@ -349,7 +353,7 @@ class SEO_Auto_Tags_Generator {
 			$head_to  = $i;
 		}
 
-		// 从尾取另一半（不越过头已取的部分）。
+		// 从尾取另一半。
 		$tail = array();
 		$used = 0;
 
@@ -376,9 +380,9 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 取站内已有标签与分类名（用于优先复用）。
+	 * 取站内已有标签与分类名，用于优先复用。
 	 *
-	 * 用 transient 缓存 10 分钟：AJAX 每次都要查，但标签库不会秒变。
+	 * 结果缓存 10 分钟。
 	 *
 	 * @return array
 	 */
@@ -418,7 +422,7 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 清掉术语与统计缓存，让下次生成 / 打开设置页能立刻看到最新数据。
+	 * 清除术语与统计缓存。
 	 */
 	public static function flush_terms_cache() {
 		delete_transient( 'seo_auto_tags_terms_cache' );
@@ -444,7 +448,7 @@ class SEO_Auto_Tags_Generator {
 		$stop   = self::stopwords();
 		$scores = array();
 
-		// 1) 已有标签 / 分类名命中（优先级最高，避免标签体系发散）。
+		// 已有标签 / 分类名命中，优先级最高。
 		if ( ! empty( $opt['reuse_existing'] ) ) {
 			foreach ( self::existing_terms() as $name ) {
 				$len = self::len( $name );
@@ -463,10 +467,7 @@ class SEO_Auto_Tags_Generator {
 			}
 		}
 
-		// 2) 中文 n-gram 词频统计。
-		//    同时记录哪些词出现在「段边界」（句子开头 / 结尾、标点旁）。
-		//    真词几乎总会在某次出现时贴着边界；而 n-gram 切出来的碎片
-		//    （例如从「磨皮插件教程」里切出的「皮插件教」）永远不会贴边界。
+		// 中文 n-gram 词频统计，同时标记出现在段边界的词。
 		$freq     = array();
 		$boundary = array();
 
@@ -496,24 +497,28 @@ class SEO_Auto_Tags_Generator {
 		}
 
 		foreach ( $freq as $w => $f ) {
-			// 至少出现两次才算「词」，只出现一次的多半是切出来的碎片。
+			// 只出现一次的多半是碎片。
 			if ( $f < 2 ) {
 				continue;
 			}
-			// 词头或词尾是虚词 → 跨词边界的碎片（例如「网站如何」）。
+			// 词头或词尾是虚词，判为碎片。
 			if ( self::is_fragment( $w, $stop ) ) {
 				continue;
 			}
-			// 太泛的词没有区分度，只有最宽松的级别才放行。
+			// 泛用词只在最宽松的级别放行。
 			if ( $level < 2 && isset( self::generic_words()[ $w ] ) ) {
 				continue;
 			}
 
-			$len   = self::len( $w );
-			$score = $f * ( 1 + ( $len - 2 ) * 0.45 );
+			// 2 字中文词太容易从词组里切出来（如「这款插件」切出「这款」），
+			// 要求出现次数更多，否则一律当作碎片。英文缩写不受此限。
+			if ( $f < 3 && self::len( $w ) <= 2 && self::cjk_count( $w ) >= 1 ) {
+				continue;
+			}
 
-			// 从未贴过边界的词，基本可以断定是切出来的碎片。
-			// 严格级别直接丢弃；放宽级别只降权，留个兜底。
+			$score = $f * self::length_weight( $w );
+
+			// 从未贴过边界的词判为碎片：严格级别丢弃，放宽级别降权。
 			if ( ! isset( $boundary[ $w ] ) ) {
 				if ( 0 === $level ) {
 					continue;
@@ -526,7 +531,7 @@ class SEO_Auto_Tags_Generator {
 			$scores[ $w ] = isset( $scores[ $w ] ) ? $scores[ $w ] + $score : $score;
 		}
 
-		// 3) 英文 / 型号词。
+		// 英文与型号词。
 		$efreq = array();
 		if ( preg_match_all( '/[A-Za-z][A-Za-z0-9\.\+\-]{2,24}/', $hay, $me ) ) {
 			foreach ( $me[0] as $w ) {
@@ -556,7 +561,7 @@ class SEO_Auto_Tags_Generator {
 			return array();
 		}
 
-		// 4) 去掉被更高分长词包含的短词（避免同时出现「资源」和「资源下载」）。
+		// 去掉被更高分长词包含的短词。
 		$keys = array_keys( $scores );
 		foreach ( $keys as $a ) {
 			if ( ! isset( $scores[ $a ] ) ) {
@@ -590,17 +595,9 @@ class SEO_Auto_Tags_Generator {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * 校验 AI 接口地址是否安全。
+	 * 校验 AI 接口地址（SSRF 防护）：必须 https，禁止内网与带凭据的 URL。
 	 *
-	 * 防止有人（或配置被篡改后）把接口地址指向内网服务，
-	 * 让服务器代替攻击者去探测内网 —— 也就是 SSRF。
-	 *
-	 * 规则：
-	 *   1. 必须是 https —— API Key 走 Authorization 头，明文 http 会泄露
-	 *   2. 禁止本机地址与内网 / 保留网段
-	 *   3. 禁止带用户名密码的 URL
-	 *
-	 * 如果确实要连内网自建模型，用过滤器 seo_auto_tags_allow_private_api 放开。
+	 * 需连接内网自建模型时，用 seo_auto_tags_allow_private_api 过滤器放开。
 	 *
 	 * @param string $url 待校验的地址。
 	 * @return true|WP_Error
@@ -643,16 +640,39 @@ class SEO_Auto_Tags_Generator {
 			return new WP_Error( 'seo_auto_tags_private', '接口地址不能指向内网域名。' );
 		}
 
-		// 内网 / 保留 IPv4 网段。
-		if ( preg_match( '/^\d{1,3}(\.\d{1,3}){3}$/', $host ) ) {
-			foreach ( self::private_ip_patterns() as $p ) {
-				if ( preg_match( $p, $host ) ) {
-					return new WP_Error( 'seo_auto_tags_private', '接口地址不能指向内网 IP。' );
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) && self::is_restricted_ip( $host ) ) {
+			return new WP_Error( 'seo_auto_tags_private', '接口地址不能指向内网或保留 IP。' );
+		}
+
+		return true;
+	}
+
+	/**
+	 * 判断 IP 是否属于内网、回环、保留或组播范围。
+	 *
+	 * @param string $ip IP 地址。
+	 * @return bool
+	 */
+	private static function is_restricted_ip( $ip ) {
+		$ip = trim( (string) $ip, '[]' );
+
+		if ( ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
+			return false;
+		}
+
+		if ( filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+			foreach ( self::private_ip_patterns() as $pattern ) {
+				if ( preg_match( $pattern, $ip ) ) {
+					return true;
 				}
 			}
 		}
 
-		return true;
+		return false === filter_var(
+			$ip,
+			FILTER_VALIDATE_IP,
+			FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+		);
 	}
 
 	/**
@@ -676,10 +696,9 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 纵深防御：解析域名后，检查真实 IP 是否落在内网。
+	 * 解析域名后检查真实 IP 是否落在内网。
 	 *
-	 * 光看域名字符串挡不住「域名解析到内网 IP」这种玩法。
-	 * 但 DNS 查询有开销，所以只在「测试连接」时做 —— 生成流程里不查。
+	 * 域名字符串校验挡不住解析到内网的情况，因此请求前会做 DNS 查询。
 	 *
 	 * @param string $url 接口地址。
 	 * @return true|WP_Error
@@ -697,25 +716,41 @@ class SEO_Auto_Tags_Generator {
 
 		$host = trim( (string) $host, '[]' );
 
-		// 本来就是 IP 的话，validate_api_base 已经查过了。
-		if ( preg_match( '/^\d{1,3}(\.\d{1,3}){3}$/', $host ) ) {
+		// 直接 IP 已由 validate_api_base() 检查，这里只负责域名解析。
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
 			return true;
+		}
+
+		if ( function_exists( 'dns_get_record' ) && defined( 'DNS_A' ) && defined( 'DNS_AAAA' ) ) {
+			$records = dns_get_record( $host, DNS_A | DNS_AAAA );
+
+			if ( is_array( $records ) && ! empty( $records ) ) {
+				foreach ( $records as $record ) {
+					$ip = isset( $record['ip'] ) ? $record['ip'] : ( isset( $record['ipv6'] ) ? $record['ipv6'] : '' );
+					if ( '' !== $ip && self::is_restricted_ip( $ip ) ) {
+						return new WP_Error(
+							'seo_auto_tags_private_dns',
+							'这个域名解析到了内网地址（' . $ip . '），已拦截。'
+						);
+					}
+				}
+
+				return true;
+			}
 		}
 
 		$ip = gethostbyname( $host );
 
 		// 解析失败时 gethostbyname 会把域名原样返回。
-		if ( $ip === $host || ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 ) ) {
+		if ( $ip === $host || ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
 			return true;
 		}
 
-		foreach ( self::private_ip_patterns() as $p ) {
-			if ( preg_match( $p, $ip ) ) {
-				return new WP_Error(
-					'seo_auto_tags_private_dns',
-					'这个域名解析到了内网地址（' . $ip . '），已拦截。'
-				);
-			}
+		if ( self::is_restricted_ip( $ip ) ) {
+			return new WP_Error(
+				'seo_auto_tags_private_dns',
+				'这个域名解析到了内网地址（' . $ip . '），已拦截。'
+			);
 		}
 
 		return true;
@@ -724,17 +759,7 @@ class SEO_Auto_Tags_Generator {
 	/**
 	 * 调用 OpenAI 兼容接口生成标签。
 	 *
-	 * @param string $title   标题。
-	 * @param string $content 正文。
-	 * @param int    $count   需要几个。
-	 * @param array  $opt     设置。
-	 * @return array
-	 */
-	/**
-	 * 调用 OpenAI 兼容接口生成标签。
-	 *
-	 * 失败时返回带「人话原因」的 WP_Error，而不是空数组 ——
-	 * 否则用户只看到「AI 未成功」，完全不知道是 Key 错了、欠费了、还是地址填错了。
+	 * 失败时返回带具体原因的 WP_Error，供界面提示。
 	 *
 	 * @param string $title   标题。
 	 * @param string $content 正文。
@@ -744,7 +769,7 @@ class SEO_Auto_Tags_Generator {
 	 */
 	private static function via_ai( $title, $content, $count, $opt ) {
 		$base = trim( (string) $opt['api_base'] );
-		$key  = trim( (string) $opt['api_key'] );
+		$key  = SEO_Auto_Tags_Settings::api_key();
 		$mdl  = trim( (string) $opt['model'] );
 
 		if ( '' === $base || '' === $key || '' === $mdl ) {
@@ -754,6 +779,11 @@ class SEO_Auto_Tags_Generator {
 		$check = self::validate_api_base( $base );
 		if ( is_wp_error( $check ) ) {
 			return $check;
+		}
+
+		$dns = self::validate_api_host_ip( $base );
+		if ( is_wp_error( $dns ) ) {
+			return $dns;
 		}
 
 		$payload = array(
@@ -770,13 +800,15 @@ class SEO_Auto_Tags_Generator {
 		$resp = wp_remote_post(
 			rtrim( $base, '/' ) . '/chat/completions',
 			array(
-				// 别设太长：2G 小机器的 PHP-FPM 进程池很浅，
-				// 几个请求同时卡住就能把整个站点拖死。
-				'timeout' => 25,
+				// 超时不宜过长，避免并发慢请求占满 PHP 进程。
+				'timeout'     => 25,
+				'redirection' => 0,
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $key,
 					'Content-Type'  => 'application/json',
 					'Accept'        => 'application/json',
+					// 固定 UA：WordPress 默认 UA 会带上站点 URL，不必外传。
+					'User-Agent'    => self::user_agent(),
 				),
 				'body'    => wp_json_encode( $payload ),
 			)
@@ -857,7 +889,7 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 把 HTTP 状态码翻译成「用户能照着修」的说明。
+	 * 把 HTTP 状态码转换成可操作的提示文案。
 	 *
 	 * @param int    $code 状态码。
 	 * @param string $body 响应体。
@@ -894,8 +926,7 @@ class SEO_Auto_Tags_Generator {
 	/**
 	 * 从响应体里取出模型回复的文本。
 	 *
-	 * 不同服务商的返回结构不完全一样，这里按常见格式逐个兜底，
-	 * 免得换个服务商就「读不懂」。
+	 * 各服务商返回结构不一，按常见格式依次尝试。
 	 *
 	 * @param string $body 原始响应体。
 	 * @return string
@@ -907,8 +938,8 @@ class SEO_Auto_Tags_Generator {
 			return '';
 		}
 
-		// 有些网关即使没开 stream 也会回 SSE 分块。
-		// 拼完之后就是纯文本了，直接返回 —— 别再往 json_decode 送。
+		// 部分网关即使未开 stream 也会返回 SSE 分块。
+		// 拼接后已是纯文本，直接返回。
 		if ( 0 === strpos( $body, 'data:' ) ) {
 			return self::join_sse( $body );
 		}
@@ -986,15 +1017,13 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 截一小段响应内容用于报错，并做脱敏。
-	 *
-	 * 错误响应里偶尔会回显请求头，绝不能把 API Key 带出去。
+	 * 清洗并截断一段文本，同时抹掉其中的密钥。
 	 *
 	 * @param string $text  原始文本。
-	 * @param int    $limit 最多留多少字。
+	 * @param int    $limit 最多保留多少字。
 	 * @return string
 	 */
-	private static function snippet( $text, $limit = 160 ) {
+	private static function scrub( $text, $limit = 160 ) {
 		$text = wp_strip_all_tags( (string) $text );
 		$text = preg_replace( '/\s+/u', ' ', $text );
 		$text = trim( (string) $text );
@@ -1003,22 +1032,48 @@ class SEO_Auto_Tags_Generator {
 			return '';
 		}
 
-		// 先精确抹掉用户自己配的那把 Key。
-		$key = trim( (string) SEO_Auto_Tags_Settings::get( 'api_key' ) );
+		// 先精确匹配已配置的 Key。
+		$key = SEO_Auto_Tags_Settings::api_key();
 
 		if ( '' !== $key && false !== strpos( $text, $key ) ) {
 			$text = str_replace( $key, '***', $text );
 		}
 
-		// 再按常见格式兜一层。
+		// 再按常见格式兜底。
 		$text = preg_replace( '/(Bearer\s+)[A-Za-z0-9\-_\.]{8,}/i', '$1***', $text );
 		$text = preg_replace( '/\b(sk|api[_-]?key|token)[\-_:=\s]+[A-Za-z0-9\-_\.]{12,}/i', '$1=***', $text );
 
-		return ' 原始返回：' . self::sub( $text, 0, $limit ) . ( self::len( $text ) > $limit ? '…' : '' );
+		$cut = self::len( $text ) > $limit;
+
+		return self::sub( $text, 0, $limit ) . ( $cut ? '…' : '' );
 	}
 
 	/**
-	 * 记一笔 AI 调用次数（按月重置），让用户心里有数。
+	 * 生成用于报错的响应片段。
+	 *
+	 * @param string $text  原始文本。
+	 * @param int    $limit 最多保留多少字。
+	 * @return string
+	 */
+	private static function snippet( $text, $limit = 160 ) {
+		$frag = self::scrub( $text, $limit );
+
+		return '' === $frag ? '' : ' 原始返回：' . $frag;
+	}
+
+	/**
+	 * 请求头里的 User-Agent。
+	 *
+	 * 不用 WordPress 默认值，避免把站点地址一并发给第三方接口。
+	 *
+	 * @return string
+	 */
+	private static function user_agent() {
+		return 'SEO-Auto-Tags/' . SEO_AUTO_TAGS_VERSION . '; WordPress';
+	}
+
+	/**
+	 * 记录一次 AI 调用，按月重置。
 	 */
 	private static function bump_usage() {
 		$month = current_time( 'Y-m' );
@@ -1037,7 +1092,7 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 读取调用统计，供设置页展示。
+	 * 读取调用统计。
 	 *
 	 * @return array
 	 */
@@ -1078,12 +1133,15 @@ class SEO_Auto_Tags_Generator {
 		$lines[] = '请从下面这篇文章中提取 ' . $count . ' 个最适合做标签的关键词。';
 		$lines[] = '';
 		$lines[] = '要求：';
-		$lines[] = '1. 每个标签 2~8 个字，短小精准，是名词或名词性词组';
-		$lines[] = '2. 优先选有搜索价值的具体词：软件名、资源类型、主题领域、适用人群';
-		$lines[] = '3. 不要选过于宽泛的词（例如「资源」「分享」「教程」「免费」单独出现时）';
-		$lines[] = '4. 各标签之间不要语义重复，不要互相包含';
-		$lines[] = '5. 不要包含标点、书名号、引号、序号';
-		$lines[] = '6. 只输出 ' . $count . ' 个标签，用英文逗号分隔，不要任何解释';
+		$lines[] = '1. 长度 3~6 个字最合适，最多不超过 8 个字';
+		$lines[] = '2. 长度直接影响标签的 SEO 效果：太短（如「软件」「教程」）没有区分度；'
+			. '太长（如「安卓手机录屏软件推荐」）只能聚合一两篇文章，会变成内容稀薄的归档页。'
+			. '3~6 个字既能说清主题，又能把同类文章聚到一起';
+		$lines[] = '3. 优先选有搜索价值的具体词：软件名、资源类型、主题领域、适用人群';
+		$lines[] = '4. 不要选过于宽泛的词（例如「资源」「分享」「教程」「免费」单独出现时）';
+		$lines[] = '5. 各标签之间不要语义重复，不要互相包含';
+		$lines[] = '6. 不要包含标点、书名号、引号、序号';
+		$lines[] = '7. 只输出 ' . $count . ' 个标签，用英文逗号分隔，不要任何解释';
 		$lines[] = '';
 		$lines[] = '【文章标题】' . $title;
 		$lines[] = '';
@@ -1145,7 +1203,10 @@ class SEO_Auto_Tags_Generator {
 			$t = trim( (string) $t );
 
 			$len = self::len( $t );
-			if ( $len < 2 || $len > 12 ) {
+			$cjk = self::cjk_count( $t );
+
+			// 中文标签控制在 2~8 字；含英文的标签总长不超过 20 字符。
+			if ( $len < 2 || $len > 20 || $cjk > 8 ) {
 				continue;
 			}
 			if ( preg_match( '/^[\d\s\p{P}\p{S}]+$/u', $t ) ) {
@@ -1157,7 +1218,7 @@ class SEO_Auto_Tags_Generator {
 
 			$key = self::lower( $t );
 
-			// 用户自定义的屏蔽词，永不推荐。
+			// 命中屏蔽词，跳过。
 			if ( ! empty( $block ) && isset( $block[ $key ] ) ) {
 				continue;
 			}
@@ -1184,7 +1245,7 @@ class SEO_Auto_Tags_Generator {
 	public static function test_connection() {
 		$opt  = SEO_Auto_Tags_Settings::get();
 		$base = trim( (string) $opt['api_base'] );
-		$key  = trim( (string) $opt['api_key'] );
+		$key  = SEO_Auto_Tags_Settings::api_key();
 		$mdl  = trim( (string) $opt['model'] );
 
 		if ( '' === $base || '' === $key || '' === $mdl ) {
@@ -1196,7 +1257,7 @@ class SEO_Auto_Tags_Generator {
 			return $check;
 		}
 
-		// 测试时顺手做一次 DNS 层校验（生成流程里不做，省开销）。
+		// 测试时附加一次 DNS 层校验；生成流程也会在实际请求前复核。
 		$dns = self::validate_api_host_ip( $base );
 		if ( is_wp_error( $dns ) ) {
 			return $dns;
@@ -1205,11 +1266,13 @@ class SEO_Auto_Tags_Generator {
 		$resp = wp_remote_post(
 			rtrim( $base, '/' ) . '/chat/completions',
 			array(
-				'timeout' => 15,
+				'timeout'     => 15,
+				'redirection' => 0,
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $key,
 					'Content-Type'  => 'application/json',
 					'Accept'        => 'application/json',
+					'User-Agent'    => self::user_agent(),
 				),
 				'body'    => wp_json_encode(
 					array(
@@ -1248,7 +1311,8 @@ class SEO_Auto_Tags_Generator {
 			);
 		}
 
-		return array( 'reply' => trim( $text ) );
+		// 模型回复只截一小段用于确认连通，避免把大段内容带回前端。
+		return array( 'reply' => self::scrub( $text, 40 ) );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1278,7 +1342,6 @@ class SEO_Auto_Tags_Generator {
 			}
 		}
 
-		// 英文停用词。
 		$en = 'the and for with that this from you are was were has have had will would can could should not but all any our out use used using how what when which who why your its its https http www com org net php html css js the a an of to in on at by or as is be it we they he she his her their there here more most other some such only own same so than too very just also into over after before between under above about each few other';
 		foreach ( preg_split( '/\s+/', $en ) as $w ) {
 			$w = strtolower( trim( $w ) );
@@ -1295,10 +1358,10 @@ class SEO_Auto_Tags_Generator {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * 判断候选词是不是「跨词边界的碎片」。
+	 * 判断候选词是否为跨词边界的碎片。
 	 *
-	 * 中文没有空格，n-gram 会把「网站如何开启」切出「网站如何」这类假词。
-	 * 判据：词尾或词头是虚词，基本可以断定是碎片。
+	 * 中文无空格，n-gram 会把「网站如何开启」切出「网站如何」这类假词。
+	 * 判据：词头或词尾为虚词。
 	 *
 	 * @param string $w    候选词。
 	 * @param array  $stop 停用词表。
@@ -1333,10 +1396,10 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 太泛、没有区分度的词。
+	 * 缺乏区分度的泛用词。
 	 *
-	 * 这些词任何文章里都可能出现，做成标签对 SEO 没有帮助，
-	 * 所以默认过滤掉；只有在「放宽模式」下才允许入选。
+	 * 任何文章都可能出现，做标签对 SEO 无帮助，默认过滤；
+	 * 仅在放宽级别下允许入选。
 	 *
 	 * @return array
 	 */
@@ -1359,7 +1422,8 @@ class SEO_Auto_Tags_Generator {
 			. '建议 说明 举例 示例 案例 场景 条件 前提 基础 核心 关键 重点 要点 总结 回顾 '
 			. '工具 软件 文件 格式 类型 种类 名称 标题 描述 数量 大小 时间 位置 状态 参数 '
 			. '适合 申请 第一 第二 第三 第四 第五 首先 其次 再次 最后 另外 此外 包含 包括 '
-			. '具有 属于 位于 基于 针对 便于 以上 以下 如下 如下 目前 现在 今天 大家';
+			. '具有 属于 位于 基于 针对 便于 以上 以下 如下 目前 现在 今天 大家 '
+			. '中文 汉化 汉化版 绿色版 破解版 完整版 最新版 免费版 官方版 正式版';
 
 		$set = array();
 		foreach ( preg_split( '/\s+/u', $raw ) as $w ) {
@@ -1373,10 +1437,7 @@ class SEO_Auto_Tags_Generator {
 	}
 
 	/**
-	 * 用户自定义的标签屏蔽词。
-	 *
-	 * 设置页里一行一个。命中的词永远不会被推荐 ——
-	 * 适合屏蔽「站里根本不做这个方向」的词，或者你不想再看到的词。
+	 * 自定义标签屏蔽词，设置页一行一个。
 	 *
 	 * @return array 小写词 => 1
 	 */
@@ -1417,6 +1478,49 @@ class SEO_Auto_Tags_Generator {
 	private static function len( $s ) {
 		$s = (string) $s;
 		return function_exists( 'mb_strlen' ) ? (int) mb_strlen( $s, 'UTF-8' ) : (int) strlen( $s );
+	}
+
+	/**
+	 * 汉字个数。
+	 *
+	 * @param string $s 字符串。
+	 * @return int
+	 */
+	private static function cjk_count( $s ) {
+		$n = preg_match_all( '/[\x{4e00}-\x{9fa5}]/u', (string) $s );
+
+		return false === $n ? 0 : (int) $n;
+	}
+
+	/**
+	 * 按长度算标签的权重。
+	 *
+	 * 汉字记 2 个宽度、英文数字记 1 个，折半后得到「等效汉字数」。
+	 * 3~6 字最理想：够具体，又能聚合多篇文章。
+	 * 2 字太泛没有区分度；超过 8 字往往只服务一两篇文章，容易变成薄归档页。
+	 *
+	 * @param string $word 候选词。
+	 * @return float
+	 */
+	private static function length_weight( $word ) {
+		$len = self::len( $word );
+		$cjk = self::cjk_count( $word );
+		$eq  = ( $cjk * 2 + ( $len - $cjk ) ) / 2;
+
+		if ( $eq < 3 ) {
+			return 0.55;
+		}
+		if ( $eq < 4 ) {
+			return 0.9;
+		}
+		if ( $eq <= 6 ) {
+			return 1.2;
+		}
+		if ( $eq <= 8 ) {
+			return 0.95;
+		}
+
+		return 0.7;
 	}
 
 	/**
@@ -1487,3 +1591,4 @@ class SEO_Auto_Tags_Generator {
 		return false === $n ? 0 : (int) $n;
 	}
 }
+

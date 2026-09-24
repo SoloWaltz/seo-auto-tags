@@ -59,13 +59,29 @@
 		} );
 	}
 
-	/* 模式切换：只在 AI 模式下显示接口配置 */
+	/* 模式切换：只在 AI 模式下显示接口配置。 */
 	function bindMode() {
 		var radios = qa( '[data-seo-auto-tags-mode]' );
 		var block = q( '[data-seo-auto-tags-ai-block]' );
 
 		if ( ! radios.length || ! block ) {
 			return;
+		}
+
+		function setVisible( show ) {
+			if ( show ) {
+				block.style.display = '';
+				block.style.maxHeight = 'none';
+				block.style.opacity = '1';
+				block.style.marginBottom = '';
+				block.style.pointerEvents = '';
+			} else {
+				block.style.display = 'none';
+				block.style.maxHeight = '';
+				block.style.opacity = '0';
+				block.style.marginBottom = '0';
+				block.style.pointerEvents = 'none';
+			}
 		}
 
 		function sync() {
@@ -77,13 +93,14 @@
 				}
 			} );
 
-			block.style.display = mode === 'ai' ? '' : 'none';
+			setVisible( mode === 'ai' );
 		}
 
 		radios.forEach( function ( r ) {
 			r.addEventListener( 'change', sync );
 		} );
 
+		block.style.overflow = 'visible';
 		sync();
 	}
 
@@ -133,17 +150,49 @@
 		} );
 	}
 
+	/* 保存成功提示 */
+	function bindSaveToast() {
+		var form = q( '[data-seo-auto-tags-form]' );
+
+		if ( ! form ) {
+			return;
+		}
+
+		var toast = document.createElement( 'div' );
+		toast.className = 'seo-auto-tags-toast';
+		toast.textContent = '设置已保存';
+		document.body.appendChild( toast );
+
+		form.addEventListener( 'submit', function () {
+			form.dataset.submitting = '1';
+		} );
+
+		// WordPress 保存后会重新加载页面，通过 URL 参数判断。
+		if ( location.search.indexOf( 'settings-updated=true' ) !== -1 ) {
+			window.setTimeout( function () {
+				toast.classList.add( 'is-show' );
+			}, 100 );
+			window.setTimeout( function () {
+				toast.classList.remove( 'is-show' );
+				toast.classList.add( 'is-hide' );
+			}, 3000 );
+		}
+	}
+
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', function () {
 			bindProvider();
 			bindKeyToggle();
 			bindMode();
 			bindTest();
+			bindSaveToast();
 		} );
 	} else {
 		bindProvider();
 		bindKeyToggle();
 		bindMode();
 		bindTest();
+		bindSaveToast();
 	}
 } )();
+

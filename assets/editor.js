@@ -1,11 +1,7 @@
 /**
  * SEO 自动标签 · 编辑器交互
  *
- * 同时兼容：
- *   - 区块编辑器（Gutenberg）—— 通过 wp.data 读写文章属性
- *   - 经典编辑器 —— 直接操作标签输入框
- *
- * 不依赖 jQuery，纯原生 JS。
+ * 兼容区块编辑器（经 wp.data 读写）与经典编辑器（直接操作标签输入框）。
  */
 ( function () {
 	'use strict';
@@ -93,7 +89,6 @@
 	}
 
 	function getContent() {
-		// 1) 区块编辑器
 		if ( isBlockEditor() ) {
 			try {
 				var c = wp.data.select( 'core/editor' ).getEditedPostContent();
@@ -109,7 +104,6 @@
 			} catch ( e ) {}
 		}
 
-		// 2) 经典编辑器的可视化模式
 		if ( window.tinymce && window.tinymce.get ) {
 			var ed = window.tinymce.get( 'content' );
 			if ( ed && ! ed.isHidden() ) {
@@ -120,7 +114,6 @@
 			}
 		}
 
-		// 3) 纯文本模式
 		var ta = document.getElementById( 'content' );
 		return ta ? ta.value : '';
 	}
@@ -306,7 +299,7 @@
 				renderList( d.tags, d.existing );
 
 				if ( d.note ) {
-					// AI 失败或被限流时，把具体原因完整显示出来，别让用户对着「失败了」猜。
+					// AI 失败或被限流时，完整展示具体原因。
 					status( '已用本地算法生成 ' + d.tags.length + ' 个候选。' + d.note, 'warn' );
 					return;
 				}
@@ -451,3 +444,4 @@
 		}, 1200 );
 	}
 } )();
+

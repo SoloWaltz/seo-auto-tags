@@ -1,9 +1,8 @@
 <?php
 /**
- * 卸载插件时清理设置与缓存。
+ * 卸载时清理设置与缓存。
  *
- * 注意：只删除插件自己的设置项和临时缓存，
- * 不会碰任何已创建的标签（那是网站内容）。
+ * 只删除本插件的设置项与临时缓存，不涉及已创建的标签。
  *
  * @package SEO_Auto_Tags
  */
@@ -15,7 +14,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 delete_option( 'seo_auto_tags_options' );
 delete_option( 'seo_auto_tags_usage' );
 
-// 清掉本插件产生的所有 transient（术语缓存、AI 结果缓存、限速计数）。
+// 清除本插件的 transient。
 global $wpdb;
 
 $wpdb->query(
@@ -25,3 +24,4 @@ $wpdb->query(
 		$wpdb->esc_like( '_transient_timeout_seo_auto_tags_' ) . '%'
 	)
 );
+

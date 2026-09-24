@@ -79,7 +79,8 @@ class SEO_Auto_Tags_Ajax {
 			return array();
 		}
 
-		$out = array();
+		$out  = array();
+		$seen = array();
 
 		foreach ( array_slice( $list, 0, self::MAX_APPLY ) as $name ) {
 			$name = trim( sanitize_text_field( (string) $name ) );
@@ -94,10 +95,34 @@ class SEO_Auto_Tags_Ajax {
 				continue;
 			}
 
-			$out[] = $name;
+			$key = strtolower( $name );
+			if ( isset( $seen[ $key ] ) ) {
+				continue;
+			}
+
+			$seen[ $key ] = true;
+			$out[]        = $name;
 		}
 
 		return $out;
+	}
+
+	/**
+	 * 按字符数截断字符串（多字节安全）。
+	 *
+	 * @param string $s   原始字符串。
+	 * @param int    $max 最大字符数。
+	 * @return string
+	 */
+	private static function clip( $s, $max ) {
+		$s = (string) $s;
+		$len = function_exists( 'mb_strlen' ) ? mb_strlen( $s, 'UTF-8' ) : strlen( $s );
+
+		if ( $len <= $max ) {
+			return $s;
+		}
+
+		return function_exists( 'mb_substr' ) ? mb_substr( $s, 0, $max, 'UTF-8' ) : substr( $s, 0, $max );
 	}
 
 	/**
@@ -125,10 +150,9 @@ class SEO_Auto_Tags_Ajax {
 		$title   = isset( $_POST['title'] ) ? wp_unslash( (string) $_POST['title'] ) : '';
 		$content = isset( $_POST['content'] ) ? wp_unslash( (string) $_POST['content'] ) : '';
 
-		// 先挡一道超大请求体，生成器内部还会按字符数再采样一次。
-		if ( strlen( $content ) > 500000 ) {
-			$content = substr( $content, 0, 500000 );
-		}
+		// 限制请求体，避免异常输入占用过多内存。按字符（而非字节）截断，避免切到多字节字符中间产生乱码。
+		$title   = self::clip( $title, 5000 );
+		$content = self::clip( $content, 500000 );
 
 		$res = SEO_Auto_Tags_Generator::generate( $title, $content, SEO_Auto_Tags_Settings::get( 'count' ) );
 
@@ -156,7 +180,11 @@ class SEO_Auto_Tags_Ajax {
 
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 
-		if ( $post_id && ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! $post_id ) {
+			wp_send_json_error( array( 'message' => '缺少文章 ID。' ) );
+		}
+
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( array( 'message' => '你没有编辑这篇文章的权限。' ), 403 );
 		}
 
@@ -281,7 +309,7 @@ class SEO_Auto_Tags_Ajax {
 	public static function test() {
 		self::guard( 'manage_options' );
 
-		// 测试也会消耗极少量 token，顺手挡一下连点。
+		// 测试会消耗少量 token，限制连点。
 		$throttle = SEO_Auto_Tags_Generator::check_test_throttle();
 
 		if ( is_wp_error( $throttle ) ) {
@@ -297,3 +325,4 @@ class SEO_Auto_Tags_Ajax {
 		wp_send_json_success( array( 'message' => '连接正常，模型回复：' . $res['reply'] ) );
 	}
 }
+

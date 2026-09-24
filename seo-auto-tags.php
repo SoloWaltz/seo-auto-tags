@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       SEO 自动标签
  * Plugin URI:        https://www.rrshare.com/
- * Description:       写文章或编辑文章时自动分析正文内容，按 SEO 思路生成候选标签，由你自己勾选决定是否采用。
- * Version:           1.2.0
+ * Description:       写文章时自动分析正文，按 SEO 思路生成候选标签，逐条勾选后再决定是否采用。
+ * Version:           1.3.11
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            西瓜烧鱼
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEO_AUTO_TAGS_VERSION', '1.2.0' );
+define( 'SEO_AUTO_TAGS_VERSION', '1.3.11' );
 define( 'SEO_AUTO_TAGS_FILE', __FILE__ );
 define( 'SEO_AUTO_TAGS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEO_AUTO_TAGS_URL', plugin_dir_url( __FILE__ ) );
@@ -37,10 +37,7 @@ SEO_Auto_Tags_Metabox::init();
 SEO_Auto_Tags_Columns::init();
 
 /**
- * 激活时检查运行环境。
- *
- * 版本不够就直接拦下来并说明原因 —— 否则用户只会看到一片白屏，
- * 完全不知道发生了什么。
+ * 激活时检查运行环境，版本不足则拦截并说明原因。
  */
 function seo_auto_tags_activate() {
 	if ( version_compare( PHP_VERSION, '7.4', '<' ) ) {
@@ -61,8 +58,7 @@ register_activation_hook( SEO_AUTO_TAGS_FILE, 'seo_auto_tags_activate' );
 /**
  * 缺少 mbstring 时给出提示。
  *
- * 不阻止使用（代码里有降级处理），但中文长度判断会失准，
- * 导致标签过滤规则失效，所以还是提醒一下。
+ * 代码有降级处理，不阻止使用，但中文长度判断会失准。
  */
 function seo_auto_tags_mbstring_notice() {
 	if ( function_exists( 'mb_strlen' ) ) {
@@ -79,3 +75,4 @@ function seo_auto_tags_mbstring_notice() {
 }
 
 add_action( 'admin_notices', 'seo_auto_tags_mbstring_notice' );
+
