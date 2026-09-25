@@ -855,17 +855,18 @@ class SEO_Auto_Tags_Settings {
 	 */
 	public static function get_stats() {
 		// 全量查询较重，缓存 5 分钟。
-		$cached = get_transient( 'seo_auto_tags_stats' );
+		$cached = get_transient( 'seo_auto_tags_stats_v2' );
 
 		if ( is_array( $cached ) ) {
 			return $cached;
 		}
 
-		$tags = get_terms(
-			array(
-				'taxonomy'   => 'post_tag',
-				'hide_empty' => false,
-				'number'     => 0,
+		global $wpdb;
+
+		$tags = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT count FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s",
+				'post_tag'
 			)
 		);
 
@@ -875,8 +876,8 @@ class SEO_Auto_Tags_Settings {
 
 		if ( ! is_wp_error( $tags ) && is_array( $tags ) ) {
 			$total = count( $tags );
-			foreach ( $tags as $t ) {
-				$c = isset( $t->count ) ? (int) $t->count : 0;
+			foreach ( $tags as $count ) {
+				$c = (int) $count;
 				if ( 0 === $c ) {
 					$unused++;
 				} elseif ( 1 === $c ) {
@@ -917,7 +918,7 @@ class SEO_Auto_Tags_Settings {
 			'no_tag' => $no_tag,
 		);
 
-		set_transient( 'seo_auto_tags_stats', $stats, 5 * MINUTE_IN_SECONDS );
+		set_transient( 'seo_auto_tags_stats_v2', $stats, 5 * MINUTE_IN_SECONDS );
 
 		return $stats;
 	}
@@ -1063,4 +1064,3 @@ class SEO_Auto_Tags_Settings {
 		<?php
 	}
 }
-

@@ -24,4 +24,3 @@ $wpdb->query(
 		$wpdb->esc_like( '_transient_timeout_seo_auto_tags_' ) . '%'
 	)
 );
-

@@ -162,4 +162,3 @@ class SEO_Auto_Tags_Metabox {
 		<?php
 	}
 }
-

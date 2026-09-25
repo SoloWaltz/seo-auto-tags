@@ -151,4 +151,3 @@ class SEO_Auto_Tags_Columns {
 		);
 	}
 }
-

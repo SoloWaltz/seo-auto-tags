@@ -18,4 +18,3 @@ vendor/
 # 本地配置
 .env
 wp-config.php
-

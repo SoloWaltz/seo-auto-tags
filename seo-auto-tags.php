@@ -3,7 +3,7 @@
  * Plugin Name:       SEO 自动标签
  * Plugin URI:        https://www.rrshare.com/
  * Description:       根据文章内容生成候选标签，确认后再写入文章。
- * Version:           1.4.1
+ * Version:           1.4.4
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            西瓜烧鱼
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SEO_AUTO_TAGS_VERSION', '1.4.1' );
+define( 'SEO_AUTO_TAGS_VERSION', '1.4.4' );
 define( 'SEO_AUTO_TAGS_FILE', __FILE__ );
 define( 'SEO_AUTO_TAGS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEO_AUTO_TAGS_URL', plugin_dir_url( __FILE__ ) );
@@ -75,4 +75,3 @@ function seo_auto_tags_mbstring_notice() {
 }
 
 add_action( 'admin_notices', 'seo_auto_tags_mbstring_notice' );
-

@@ -405,13 +405,14 @@ class SEO_Auto_Tags_Generator {
 				'taxonomy'   => array( 'post_tag', 'category' ),
 				'hide_empty' => false,
 				'number'     => 2000,
+				'fields'     => 'names',
 			)
 		);
 
 		if ( ! is_wp_error( $terms ) && is_array( $terms ) ) {
-			foreach ( $terms as $t ) {
-				if ( isset( $t->name ) && '' !== trim( (string) $t->name ) ) {
-					$cache[] = trim( (string) $t->name );
+			foreach ( $terms as $name ) {
+				if ( '' !== trim( (string) $name ) ) {
+					$cache[] = trim( (string) $name );
 				}
 			}
 		}
@@ -427,6 +428,7 @@ class SEO_Auto_Tags_Generator {
 	public static function flush_terms_cache() {
 		delete_transient( 'seo_auto_tags_terms_cache' );
 		delete_transient( 'seo_auto_tags_stats' );
+		delete_transient( 'seo_auto_tags_stats_v2' );
 	}
 
 	/**
@@ -1645,4 +1647,3 @@ class SEO_Auto_Tags_Generator {
 		return false === $n ? 0 : (int) $n;
 	}
 }
-

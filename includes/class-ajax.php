@@ -339,4 +339,3 @@ class SEO_Auto_Tags_Ajax {
 		wp_send_json_success( array( 'message' => '连接正常，模型回复：' . $res['reply'] ) );
 	}
 }
-
